@@ -1,0 +1,3 @@
+/home/aserio/checkpoint/build/CMakeFiles/rebuild_cache.dir
+/home/aserio/checkpoint/build/CMakeFiles/edit_cache.dir
+/home/aserio/checkpoint/build/CMakeFiles/checkpoint.dir
