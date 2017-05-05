@@ -13,7 +13,7 @@
 
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/iostreams.hpp>
-/*
+
 class File {
  public:
   std::vector<std::string> file_buffer;
@@ -54,10 +54,13 @@ void File::print() {
 }
 
 int main (int argc, char* argv[]){
-// std::cout<<"Hi"<<std::endl;
-// std::future<int> f;
-// f = std::async(std::launch::async, []{return 8;});
-// std::cout<<f.get()<<std::endl;
+
+ return hpx::init(argc, argv);
+}
+
+int hpx_main() {
+ hpx::cout<<"Hello_World"<<std::endl;
+ 
  File file;
  file.attach("test.txt");
  file.print();
@@ -65,22 +68,6 @@ int main (int argc, char* argv[]){
  File file2;
  file2.attach("test2.txt");
  file2.print();
-
- return hpx::init(argc, argv);
-}
-
-int hpx_main() {
- hpx::cout<<"Hello_World"<<std::endl;
+ 
  hpx::finalize();
-}
-*/
-int main (int argc, char* argv[])
-{
- return hpx::init(argc, argv);
-}
-
-int hpx_main ()
-{
- hpx::cout<<"Hello World"<<std::endl;
- return 0;
 }
