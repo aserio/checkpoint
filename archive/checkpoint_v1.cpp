@@ -2,8 +2,7 @@
 // April 28, 2017
 //
 // This example creats a class which can load a file and can create 
-// a new file that is a copy of the old one. I am working to extend
-// this example to use HPXIO
+// a new file that is a copy of the old one.
 
 
 #include <iostream>
@@ -12,12 +11,8 @@
 #include <string>
 #include <vector>
 
-#include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/iostreams.hpp>
-
-#include <hpxio/server/local_file.hpp>
-#include <hpxio/base_file.hpp>
 
 class File {
  public:
@@ -64,6 +59,7 @@ int main (int argc, char* argv[]){
 }
 
 int hpx_main() {
+ hpx::cout<<"Hello_World"<<std::endl;
  
  File file;
  file.attach("test.txt");
@@ -72,14 +68,6 @@ int hpx_main() {
  File file2;
  file2.attach("test2.txt");
  file2.print();
-
- hpx::io::base_file f =
-  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
- f.open(hpx::launch::sync, "test.txt", O_RDONLY);
- hpx::serialization::serialize_buffer<char> data;
- data = f.read(hpx::launch::sync, 5);
- f.close();
- hpx::cout<<data.data()<<std::endl;
  
  hpx::finalize();
 }
