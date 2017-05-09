@@ -5,12 +5,8 @@
 // a new file that is a copy of the old one. This example uses HPX
 // and HPXIO.
 
-
-#include <iostream>
-#include <fstream>
-#include <future>
-#include <string>
-#include <vector>
+//#include <string>
+//#include <vector>
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
@@ -21,13 +17,16 @@
 
 class File {
  public:
-  std::vector<std::string> file_buffer;
+  hpx::io::base_file file_handle;
   hpx::serialization::serialize_buffer<char> data; 
-  void print(); // Print out the contents of file_buffer
   void attach(std::string file_name); // Load a file
   void attach(std::string file_name, size_t count); // Load a file
   void attach(std::string file_name, size_t count, off_t offset); // Load a file
   void copy(std::string new_file_name); // Make a new copy of a file
+  void print(); // Print out the contents of file_buffer
+  ~File () {
+   file_handle.close();
+  }
 };
 
 void File::attach(std::string file_name) {
@@ -39,27 +38,21 @@ void File::attach(std::string file_name) {
   temp_handle.close();
  }
  else std::cerr<<"No file found!"<<std::endl;
- hpx::io::base_file file_handle =
-  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
  file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
  data=file_handle.read(hpx::launch::sync, count);
- file_handle.close();
 }
 
 void File::attach(std::string file_name, size_t count) {
- hpx::io::base_file file_handle =
-  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
  file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
  data=file_handle.read(hpx::launch::sync, count);
- file_handle.close();
 }
 
 void File::attach(std::string file_name, size_t count, off_t offset) {
- hpx::io::base_file file_handle =
-  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
  file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
   data=file_handle.pread(hpx::launch::sync, count, offset);
- file_handle.close();
 }
 
 void File::copy(std::string new_file_name) {
