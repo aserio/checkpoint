@@ -2,8 +2,8 @@
 // April 28, 2017
 //
 // This example creats a class which can load a file and can create 
-// a new file that is a copy of the old one. I am working to extend
-// this example to use HPXIO
+// a new file that is a copy of the old one. This example uses HPX
+// and HPXIO.
 
 
 #include <iostream>
@@ -22,40 +22,63 @@
 class File {
  public:
   std::vector<std::string> file_buffer;
+  hpx::serialization::serialize_buffer<char> data; 
   void print(); // Print out the contents of file_buffer
   void attach(std::string file_name); // Load a file
+  void attach(std::string file_name, size_t count); // Load a file
+  void attach(std::string file_name, size_t count, off_t offset); // Load a file
   void copy(std::string new_file_name); // Make a new copy of a file
 };
 
 void File::attach(std::string file_name) {
- std::ifstream file_handle;
- file_handle.open(file_name,std::fstream::in);
- std::string buff;
- while (std::getline(file_handle, buff)){
-  buff.append("\n");
-  file_buffer.push_back(buff);
+ size_t count;
+ std::ifstream temp_handle (file_name);
+ if (temp_handle) {
+  temp_handle.seekg(0, temp_handle.end);
+  count=temp_handle.tellg();
+  temp_handle.close();
  }
+ else std::cerr<<"No file found!"<<std::endl;
+ hpx::io::base_file file_handle =
+  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
+ data=file_handle.read(hpx::launch::sync, count);
+ file_handle.close();
+}
+
+void File::attach(std::string file_name, size_t count) {
+ hpx::io::base_file file_handle =
+  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
+ data=file_handle.read(hpx::launch::sync, count);
+ file_handle.close();
+}
+
+void File::attach(std::string file_name, size_t count, off_t offset) {
+ hpx::io::base_file file_handle =
+  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+ file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
+  data=file_handle.pread(hpx::launch::sync, count, offset);
  file_handle.close();
 }
 
 void File::copy(std::string new_file_name) {
- if (file_buffer.size() == 0) {
+ if (data.size() == 0) {
   std::cerr<<"No file to copy!"<<std::endl;
  }
  else {
-  std::ofstream new_file_handle;
-  new_file_handle.open(new_file_name, std::ofstream::out);
-  for (int i=0; i<file_buffer.size(); i++)
-   new_file_handle<<file_buffer[i];
+  hpx::io::base_file new_file_handle =
+   hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+  new_file_handle.open(hpx::launch::sync, 
+                       new_file_name, 
+                       O_WRONLY | O_CREAT);
+  new_file_handle.write(hpx::launch::sync, data);  
   new_file_handle.close();
  }
 }
 
 void File::print() {
- for (int i=0; i<file_buffer.size(); i++) {
-  std::cout<<file_buffer[i];
- };
- std::cout<<std::endl;
+ hpx::cout<<data.data()<<std::endl;
 }
 
 int main (int argc, char* argv[]){
@@ -65,21 +88,20 @@ int main (int argc, char* argv[]){
 
 int hpx_main() {
  
+ size_t count;
+ 
+ //Test 1
  File file;
  file.attach("test.txt");
+ count=file.data.size();
+ hpx::cout<<"Size of buffer: "<<count<<std::endl;
  file.print();
  file.copy("test2.txt");
+ 
+ //Test 2
  File file2;
- file2.attach("test2.txt");
+ file2.attach("test2.txt", count);
  file2.print();
 
- hpx::io::base_file f =
-  hpx::new_<hpx::io::server::local_file>(hpx::find_here());
- f.open(hpx::launch::sync, "test.txt", O_RDONLY);
- hpx::serialization::serialize_buffer<char> data;
- data = f.read(hpx::launch::sync, 5);
- f.close();
- hpx::cout<<data.data()<<std::endl;
- 
  hpx::finalize();
 }
