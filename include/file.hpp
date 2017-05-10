@@ -4,10 +4,13 @@
 // file.hpp describes a class which encapsulates a file accessed via HPXIO
 // This class takes a file name and optionally takes the number of 
 // bytes to read from a file and an offset to start reading from.
-// Additionally the File class can make a new file from the old one. 
-
-//#include <string>
-//#include <vector>
+// Additionally the File class can make a new file from the old one.
+//
+// My next steps are to:
+//    check that the file is open before reading
+//    add a write option
+//    create an = overload
+//    Create a checkpoint?
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
@@ -18,13 +21,17 @@
 
 class File {
  public:
-  hpx::io::base_file file_handle;
-  hpx::serialization::serialize_buffer<char> data; 
   File (std::string file_name); // Load a file
   File (std::string file_name, size_t count); // Load a file
   File (std::string file_name, size_t count, off_t offset); // Load a file
+  
+  hpx::io::base_file file_handle;
+  hpx::serialization::serialize_buffer<char> data; 
+   
+  bool is_open();
   void copy(std::string new_file_name); // Make a new copy of a file
   void print(); // Print out the contents of file_buffer
+  
   ~File () {
    file_handle.close();
   }
@@ -54,6 +61,10 @@ File::File(std::string file_name, size_t count, off_t offset) {
  file_handle = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
  file_handle.open(hpx::launch::sync, file_name, O_RDONLY);
   data=file_handle.pread(hpx::launch::sync, count, offset);
+}
+
+bool File::is_open(){
+ return file_handle.is_open(hpx::launch::sync);
 }
 
 void File::copy(std::string new_file_name) {
