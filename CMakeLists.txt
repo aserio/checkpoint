@@ -12,6 +12,10 @@ add_library (pxfs SHARED IMPORTED GLOBAL)
 set_target_properties (pxfs PROPERTIES IMPORTED_LOCATION 
   /home/aserio/lib/pxfs-v0.1.0-gcc6.3.0/lib/libhpx_base_file.so )
 
+#Including Headers
+include_directories (${PROJECT_SOURCE_DIR}/include/)
+
+#Create Executable
 add_executable (checkpoint checkpoint.cpp)
 hpx_setup_target(checkpoint
   COMPONENT_DEPENDENCIES iostreams

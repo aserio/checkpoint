@@ -1,22 +1,21 @@
 // Adrian Serio
 // April 28, 2017
 //
-// This example creats a class which can load a file and can create 
-// a new file that is a copy of the old one. This example uses HPX
-// and HPXIO.
+// file.hpp describes a class which encapsulates a file accessed via HPXIO
+// This class takes a file name and optionally takes the number of 
+// bytes to read from a file and an offset to start reading from.
+// Additionally the File class can make a new file from the old one. 
 
 //#include <string>
 //#include <vector>
-/*
+
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/iostreams.hpp>
 
 #include <hpxio/server/local_file.hpp>
 #include <hpxio/base_file.hpp>
-*/
-#include <file.hpp>
-/*
+
 class File {
  public:
   hpx::io::base_file file_handle;
@@ -74,28 +73,4 @@ void File::copy(std::string new_file_name) {
 
 void File::print() {
  hpx::cout<<data.data()<<std::endl;
-}
-*/
-
-int main (int argc, char* argv[]){
-
- return hpx::init(argc, argv);
-}
-
-int hpx_main() {
- 
- size_t count;
- 
- //Test 1
- File file("test.txt");
- count=file.data.size();
- hpx::cout<<"Size of buffer: "<<count<<std::endl;
- file.print();
- file.copy("test2.txt");
- 
- //Test 2
- File file2("test2.txt", count);
- file2.print();
-
- hpx::finalize();
 }
