@@ -15,6 +15,7 @@ int main (int argc, char* argv[]){
 int hpx_main() {
  
  size_t count;
+ off_t offset=17;
  
  //Test 1
  File file("test.txt");
@@ -24,11 +25,19 @@ int hpx_main() {
  count=file.data.size();
  hpx::cout<<"Size of buffer: "<<count<<std::endl;
  file.print();
- file.copy("test2.txt");
+ file.save("test2.txt");
  
  //Test 2
  File file2("test2.txt", count);
  file2.print();
-
+ file2.save("test3.txt");
+ 
+ //Test 3
+ File file3("test3.txt", count, offset);
+ file3.print();
+ hpx::cout<<file3.file_name<<std::endl;
+ file3.save();
+ file3.remove_file();
+ 
  hpx::finalize();
 }
