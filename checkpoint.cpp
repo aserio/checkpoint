@@ -5,14 +5,10 @@
 // a new file that is a copy of the old one. This example uses HPX
 // and HPXIO.
 
+#include <hpx/hpx_main.hpp>
 #include <file.hpp>
 
-int main (int argc, char* argv[]){
-
- return hpx::init(argc, argv);
-}
-
-int hpx_main() {
+int main() {
  
  size_t count;
  off_t offset=17;
@@ -39,5 +35,5 @@ int hpx_main() {
  file3.save();
  file3.remove_file();
  
- hpx::finalize();
+ return 0;
 }

@@ -12,7 +12,6 @@
 //    Create a checkpoint?
 
 #include <hpx/hpx.hpp>
-#include <hpx/hpx_main.hpp>
 #include <hpx/include/iostreams.hpp>
 
 #include <hpxio/server/local_file.hpp>
@@ -49,6 +48,8 @@ class File {
 // Constructors
 File::File(std::string file_name_arg) {
  size_t count;
+ 
+ //Find the size of the file
  std::ifstream temp_handle (file_name_arg);
  if (temp_handle) {
   temp_handle.seekg(0, temp_handle.end);
@@ -65,6 +66,7 @@ File::File(std::string file_name_arg) {
  file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY);
  file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
  
+ //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
   data=file_handle_read.read(hpx::launch::sync, count);
@@ -82,6 +84,7 @@ File::File(std::string file_name_arg, size_t count) {
  file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY);
  file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
  
+ //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
   data=file_handle_read.read(hpx::launch::sync, count);
@@ -97,8 +100,9 @@ File::File(std::string file_name_arg, size_t count, off_t offset) {
  
  //Open handles
  file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY);
- file_handle_write.open(hpx::launch::sync, file_name_arg, O_RDONLY);
+ file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
  
+ //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
   data=file_handle_read.pread(hpx::launch::sync, count, offset);
@@ -150,7 +154,7 @@ void File::save(std::string new_file_name) {
    file_handle_read.remove_file(hpx::launch::sync, file_name);
    //Re-create and open
    file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY | O_CREAT);
-   file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY | O_CREAT);
+   file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
    if(file_handle_write.is_open(hpx::launch::sync)) {
     file_handle_write.write(hpx::launch::sync, data);
    }
