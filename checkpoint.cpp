@@ -16,44 +16,38 @@
 #include <hpx/include/serialization.hpp>
 #include <file.hpp>
 
-template <typename ...T>
-std::vector<char>  checkpoint (T const& ...t) {
- std::vector<char> v;
+//Checkpoint function - improved
+template <typename C, typename ...T>
+void checkpoint (C& c, T const& ...t) {
  {
-  hpx::serialization::output_archive ar(v);
+  hpx::serialization::output_archive ar(c);
   int const sequencer[]= {  //Trick to expand the variable pack
    (ar<<t, 0)...};          //Takes advantage of the comma operator
  }
- return v;
 }
 
-template <typename ...T>
-void resurrect (std::vector<char> v, T& ...t) {
+//Resurrect Function - Improved
+template <typename C, typename ...T>
+void resurrect (C& c, T& ...t) {
  {
-  hpx::serialization::input_archive ar(v, v.size());
+  hpx::serialization::input_archive ar(c, c.size());
   int const sequencer[]= {  //Trick to exand the variable pack
    (ar >> t, 0)...};        //Takes advantage of the comma operator
  } 
 }
 
-//template <typename C, typename ...T>
-//void resurrect (C& c, T& ...t) {
-// {
-//  hpx::serialization::input_archive ar(c, c.size());
-//  int const sequencer[]= {  //Trick to exand the variable pack
-//   (ar >> t, 0)...};        //Takes advantage of the comma operator
-// } 
-//}
-//
-//struct Checkpoint {
-// std::vector<char> data;
-// int size() { return data.size();}
-// Checkpoint operator=(std::vector<char> v) {
-//  data = std::move(v);
-//  return *this;
-// }
-// char operator[](int i) { return data[i]; }
-//};
+//Checkpoint Object
+template<typename T = std::vector<char>>
+struct Checkpoint {
+ T data;
+ int size() const { return data.size();}
+ void resize(int n) { data.resize(n); }
+ void operator=(T v) {
+  data = std::move(v);
+ }
+ char& operator[](int i) { return data[i]; }
+ const char& operator[](int i) const { return data[i]; }
+};
 
 int main() {
  
@@ -70,8 +64,7 @@ int main() {
  std::vector<char> vec(str.begin(),str.end());
  std::vector<char> vec2;
  std::vector<char> archive;
- std::vector<char> archive2;
-// Checkpoint archive2;
+ Checkpoint<> archive2;
  
  //Test 1
  hpx::cout<<"Test 1:"<<std::endl;
@@ -89,7 +82,8 @@ int main() {
   else hpx::cout<<vec[i]<<std::endl;
  }
  
- archive=checkpoint(character, integer, flt, boolean, str, vec);
+// archive=checkpoint(character, integer, flt, boolean, str, vec);
+ checkpoint(archive, character, integer, flt, boolean, str, vec);
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
  
  //Print out resurected variables 
@@ -113,8 +107,22 @@ int main() {
 
  //Test 2
  hpx::cout<<"Test 2:"<<std::endl;
- archive2=checkpoint(vec, integer);
- resurrect(archive2, vec2, integer2);
+ 
+ archive2=archive;
+ resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
+ 
+ if (character == character2 && integer == integer2 && flt == flt2
+      && boolean == boolean2 && str == str2 
+      && std::equal(vec.begin(), vec.end(), vec2.begin())){
+  hpx::cout<<"I work!"<<std::endl;
+ }
+
+ //Test 3
+ hpx::cout<<"Test 3:"<<std::endl;
+ 
+ Checkpoint<> archive3;
+ checkpoint(archive3, vec, integer);
+ resurrect(archive3, vec2, integer2);
  
  if (std::equal(vec.begin(), vec.end(), vec2.begin()) && integer==integer2){
   hpx::cout<<"I work!"<<std::endl;
