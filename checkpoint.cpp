@@ -3,12 +3,14 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// This example test the checkpoint function.
-// Checkpoint is designed to serialize an object and save it as a
+// This example tests the store function for its ability to 
+// checkpoint and application.
+// 
+// Store is designed to serialize an object and save it as a
 // byte stream. Resurrect converts the byte stream back into the 
 // object.
 // 
-// Checkpoint takes a container and any number of objects
+// Store takes a container and any number of objects
 // which you wish to store. To use the provided 
 // checkpoint object the user must ensure that the
 // container exposes size() and resize().
@@ -16,6 +18,8 @@
 // Resurrect takes the checkpoint object and the container
 // which to store the objects in the byte stream (in the same order
 // as they were placed in).
+//
+// Checkpoint is a container object which can be passed to store
 // 
 // To-Do:
 //    - Create a type Checkpoint to manage data stream
@@ -23,14 +27,17 @@
 //       -> Return a GID
 //    - Add tests
 //    - Create as a header file
+//
+// TRYING TO GET A COMPONENT TO TAKE TEMPLATES D:  D:  D:
 
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/serialization.hpp>
+#include <hpx/include/components.hpp>
 #include <file.hpp>
 
 //Checkpoint function - improved
 template <typename C, typename ...T>
-void checkpoint (C& c, T&& ...t) {
+void store (C& c, T&& ...t) {
  {
   hpx::serialization::output_archive ar(c);
   int const sequencer[]= {  //Trick to expand the variable pack
@@ -49,20 +56,78 @@ void resurrect (C& c, T& ...t) {
 }
 
 //Checkpoint Object
-template<typename T = std::vector<char>>
-struct Checkpoint {
+//template<typename T = std::vector<char>>
+//struct Checkpoint {
+// T data;
+// int size() const { return data.size();}
+// void resize(int n) { data.resize(n); }
+// void operator=(T v) {
+// data = std::move(v);
+// }
+// char& operator[](int i) { return data[i]; }
+// const char& operator[](int i) const { return data[i]; }
+//};
+
+/////////// Checkpoint Component ///////////////
+
+//Server
+//template<typename T = std::vector<char>>
+struct checkpoint
+ : hpx::components::simple_component_base<checkpoint>
+{
+ using T=std::vector<char>;
  T data;
- int size() const { return data.size();}
+
+ int size() const { return data.size(); }
  void resize(int n) { data.resize(n); }
  void operator=(T v) {
-  data = std::move(v);
+  data=std::move(v);
  }
  char& operator[](int i) { return data[i]; }
  const char& operator[](int i) const { return data[i]; }
+
+ int hi() { 
+  hpx::cout<<"I made it!"<<std::endl;
+  int hi_int=10;
+  hpx::cout<<"Do I still work"<<std::endl;
+  return hi_int;
+ }
+ 
+ HPX_DEFINE_COMPONENT_ACTION(checkpoint, hi, hi_action);
 };
 
-int main() {
+HPX_REGISTER_ACTION_DECLARATION(checkpoint::hi_action, test)
+
+//Client
+struct checkpoint_client
+ : hpx::components::client_base<checkpoint_client, checkpoint>
+{
+ using base_type = hpx::components::client_base<checkpoint_client, checkpoint>;
  
+ checkpoint_client(hpx::future<hpx::id_type> && id)
+  : base_type(std::move(id)) 
+ {}
+
+ checkpoint::hi_action act;
+ 
+ hpx::future<int> hi() { return hpx::async(act, get_id()); }
+};
+
+/////// Registrations //////// 
+HPX_REGISTER_COMPONENT(hpx::components::simple_component<checkpoint>,
+                        checkpoint );
+HPX_REGISTER_ACTION(checkpoint::hi_action, test);
+
+// Main 
+int main() {
+ hpx::id_type here = hpx::find_here();
+ checkpoint_client bin = hpx::new_<checkpoint_client>(here);
+
+ auto f =  bin.hi();
+ int z = f.get();
+ 
+ hpx::cout<<z<<" Bye!"<<std::endl;
+/*
  char character='d';
  char character2;
  int integer=10;
@@ -94,8 +159,8 @@ int main() {
   else hpx::cout<<vec[i]<<std::endl;
  }
  
-// archive=checkpoint(character, integer, flt, boolean, str, vec);
- checkpoint(archive, character, integer, flt, boolean, str, vec);
+// archive=store(character, integer, flt, boolean, str, vec);
+ store(archive, character, integer, flt, boolean, str, vec);
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
  
  //Print out resurected variables 
@@ -133,12 +198,12 @@ int main() {
  hpx::cout<<"Test 3:"<<std::endl;
  
  Checkpoint<> archive3;
- checkpoint(archive3, vec, integer);
+ store(archive3, vec, integer);
  resurrect(archive3, vec2, integer2);
  
  if (std::equal(vec.begin(), vec.end(), vec2.begin()) && integer==integer2){
   hpx::cout<<"I work!"<<std::endl;
  }
+*/
  return 0;
-
 }
