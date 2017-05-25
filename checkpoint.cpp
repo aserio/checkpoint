@@ -1,10 +1,22 @@
-// Adrian Serio
-// April 28, 2017
+// Copyright (c) 2017 Adrian Serio
 //
-// This example test the checkpooint function.
+// Distributed under the Boost Software License, Version 1.0. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+// This example test the checkpoint function.
 // Checkpoint is designed to serialize an object and save it as a
 // byte stream. Resurrect converts the byte stream back into the 
 // object.
+// 
+// Checkpoint takes a container and any number of objects
+// which you wish to store. To use the provided 
+// checkpoint object the user must ensure that the
+// container exposes size() and resize().
+//
+// Resurrect takes the checkpoint object and the container
+// which to store the objects in the byte stream (in the same order
+// as they were placed in).
+// 
 // To-Do:
 //    - Create a type Checkpoint to manage data stream
 //    - Wrap serialized data in a component?
@@ -18,7 +30,7 @@
 
 //Checkpoint function - improved
 template <typename C, typename ...T>
-void checkpoint (C& c, T const& ...t) {
+void checkpoint (C& c, T&& ...t) {
  {
   hpx::serialization::output_archive ar(c);
   int const sequencer[]= {  //Trick to expand the variable pack
@@ -128,4 +140,5 @@ int main() {
   hpx::cout<<"I work!"<<std::endl;
  }
  return 0;
+
 }
