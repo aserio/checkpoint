@@ -3,36 +3,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// This example tests the store function for its ability to 
+// This example tests the store and resurrect functions for their ability to 
 // checkpoint and application.
 // 
-// Store is designed to serialize an object and save it as a
-// byte stream. Resurrect converts the byte stream back into the 
-// object.
-// 
-// Store takes a container and any number of objects
-// which you wish to store. To use the provided 
-// checkpoint object the user must ensure that the
-// container exposes size() and resize().
-//
-// Resurrect takes the checkpoint object and the container
-// which to store the objects in the byte stream (in the same order
-// as they were placed in).
-//
-// Checkpoint is a container object which can be passed to store
-// 
-// To-Do:
-//    - Create a type Checkpoint to manage data stream
-//    - Wrap serialized data in a component?
-//       -> Return a GID
-//    - Add tests
-//    - Create as a header file
-//
-// TRYING TO GET A COMPONENT TO TAKE TEMPLATES D:  D:  D:
 
 #include <hpx/hpx_main.hpp>
-#include <hpx/include/serialization.hpp>
-#include <hpx/include/components.hpp>
 #include <file.hpp>
 #include <checkpoint.hpp>
 
@@ -70,7 +45,6 @@ int main() {
   else hpx::cout<<vec[i]<<std::endl;
  }
  
-// archive=store(character, integer, flt, boolean, str, vec);
  store(archive, character, integer, flt, boolean, str, vec);
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
  
