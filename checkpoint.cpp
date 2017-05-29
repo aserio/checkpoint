@@ -34,100 +34,11 @@
 #include <hpx/include/serialization.hpp>
 #include <hpx/include/components.hpp>
 #include <file.hpp>
-
-//Checkpoint function - improved
-template <typename C, typename ...T>
-void store (C& c, T&& ...t) {
- {
-  hpx::serialization::output_archive ar(c);
-  int const sequencer[]= {  //Trick to expand the variable pack
-   (ar<<t, 0)...};          //Takes advantage of the comma operator
- }
-}
-
-//Resurrect Function - Improved
-template <typename C, typename ...T>
-void resurrect (C& c, T& ...t) {
- {
-  hpx::serialization::input_archive ar(c, c.size());
-  int const sequencer[]= {  //Trick to exand the variable pack
-   (ar >> t, 0)...};        //Takes advantage of the comma operator
- } 
-}
-
-//Checkpoint Object
-//template<typename T = std::vector<char>>
-//struct Checkpoint {
-// T data;
-// int size() const { return data.size();}
-// void resize(int n) { data.resize(n); }
-// void operator=(T v) {
-// data = std::move(v);
-// }
-// char& operator[](int i) { return data[i]; }
-// const char& operator[](int i) const { return data[i]; }
-//};
-
-/////////// Checkpoint Component ///////////////
-
-//Server
-//template<typename T = std::vector<char>>
-struct checkpoint
- : hpx::components::simple_component_base<checkpoint>
-{
- using T=std::vector<char>;
- T data;
-
- int size() const { return data.size(); }
- void resize(int n) { data.resize(n); }
- void operator=(T v) {
-  data=std::move(v);
- }
- char& operator[](int i) { return data[i]; }
- const char& operator[](int i) const { return data[i]; }
-
- int hi() { 
-  hpx::cout<<"I made it!"<<std::endl;
-  int hi_int=10;
-  hpx::cout<<"Do I still work"<<std::endl;
-  return hi_int;
- }
- 
- HPX_DEFINE_COMPONENT_ACTION(checkpoint, hi, hi_action);
-};
-
-HPX_REGISTER_ACTION_DECLARATION(checkpoint::hi_action, test)
-
-//Client
-struct checkpoint_client
- : hpx::components::client_base<checkpoint_client, checkpoint>
-{
- using base_type = hpx::components::client_base<checkpoint_client, checkpoint>;
- 
- checkpoint_client(hpx::future<hpx::id_type> && id)
-  : base_type(std::move(id)) 
- {}
-
- checkpoint::hi_action act;
- 
- hpx::future<int> hi() { return hpx::async(act, get_id()); }
-};
-
-/////// Registrations //////// 
-HPX_REGISTER_COMPONENT(hpx::components::simple_component<checkpoint>,
-                        checkpoint );
-HPX_REGISTER_ACTION(checkpoint::hi_action, test);
+#include <checkpoint.hpp>
 
 // Main 
 int main() {
- hpx::id_type here = hpx::find_here();
- checkpoint_client bin = hpx::new_<checkpoint_client>(here);
 
- auto f =  bin.hi();
- int z = f.get();
- 
- hpx::cout<<z<<" Bye!"<<std::endl;
-/*
  char character='d';
  char character2;
  int integer=10;
@@ -204,6 +115,6 @@ int main() {
  if (std::equal(vec.begin(), vec.end(), vec2.begin()) && integer==integer2){
   hpx::cout<<"I work!"<<std::endl;
  }
-*/
+
  return 0;
 }
