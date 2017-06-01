@@ -90,11 +90,5 @@ int main() {
   hpx::cout<<"I work!"<<std::endl;
  }
 
- //Test 4
- File omg("omg.txt");
- hpx::serialization::serialize_buffer<char> char_buff("OMG! This is a test!", 20);
- omg.data=char_buff;
- omg.print(); 
- omg.write();
  return 0;
 }

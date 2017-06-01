@@ -32,12 +32,13 @@ class File {
   hpx::serialization::serialize_buffer<char> data; 
    
   bool is_open();
+//  ssize_t size();                   ADD AFTER YOU UPDATE PXFS
   void write();
   void write(off_t const offset);
   void lseek(int whence); // Seek a point in the file
   void lseek(off_t offset, int whence); // Seek a point in the file
   void save (); // Write data to file
-  void save(std::string new_file_name); // Write to a possibly new file
+  void save(std::string new_file_name); // Write to a possibly new file  
   void print(); // Print out the contents of file_buffer
   void remove_file(); // Delete file 
   
@@ -50,30 +51,39 @@ class File {
 // Constructors
 File::File(std::string file_name_arg) {
  size_t count;
- 
- //Find the size of the file
- std::ifstream temp_handle (file_name_arg);
- if (temp_handle) {
-  temp_handle.seekg(0, temp_handle.end);
-  count=temp_handle.tellg();
-  temp_handle.close();
- }
- else std::cerr<<"Error: No file found!"<<std::endl;
- 
  //Instantiate Read and Write handles
  file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
  file_handle_write = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+
+ if (access(file_name_arg.c_str(), F_OK) == 0) { 
+   std::ifstream temp_handle (file_name_arg);
+   if (temp_handle) {
+    //Find the size of the file
+    temp_handle.seekg(0, temp_handle.end);
+    count=temp_handle.tellg();
+    temp_handle.close();
+   } 
+   else std::cerr<<"Error: File not Accessed!"<<std::endl;
  
- //Open handles
- file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY);
- file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
- 
- //Read in file
- if(file_handle_read.is_open(hpx::launch::sync)) {
-  file_name=file_name_arg;
-  data=file_handle_read.read(hpx::launch::sync, count);
+  //Open handles
+  file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY);
+  file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
+  
+  //Get file size                        Add after you update PXFS
+//  count = file_handle_read.size();
+
+  //Read in file
+  if(file_handle_read.is_open(hpx::launch::sync)) {
+   file_name=file_name_arg;
+   data=file_handle_read.read(hpx::launch::sync, count);
+  }
+  else std::cerr<<"Error: No file found!"<<std::endl;
  }
- else std::cerr<<"Error: No file found!"<<std::endl;
+ else {
+  //Create file and open handles
+  file_handle_read.open(hpx::launch::sync, file_name_arg, O_RDONLY | O_CREAT);
+  file_handle_write.open(hpx::launch::sync, file_name_arg, O_WRONLY);
+ }
 }
 
 File::File(std::string file_name_arg, size_t count) {
@@ -120,6 +130,13 @@ bool File::is_open(){
  }
  else false;
 }
+
+//size()                                 ADD AFTER YOU UPDATE PXFS
+//ssize_t File::size() {
+// ssize_t size;
+// file_handle_read.size(hpx::launch::sync);
+// return size;
+//}
 
 // write()
 void File::write() {
