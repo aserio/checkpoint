@@ -35,6 +35,12 @@ hpx_setup_target(1d_stencil_4_checkpoint
   DEPENDENCIES pxfs 
 )
 
+add_executable (file_serialization file_serialization.cpp)
+hpx_setup_target( file_serialization
+  COMPONENT_DEPENDENCIES iostreams
+  DEPENDENCIES pxfs
+)
+
 #Include Tests
 add_subdirectory (tests)
 enable_testing()

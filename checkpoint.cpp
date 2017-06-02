@@ -26,7 +26,8 @@ int main() {
  std::string str2;
  std::vector<char> vec(str.begin(),str.end());
  std::vector<char> vec2;
- std::vector<char> archive;
+// std::vector<char> archive;
+ Checkpoint<> archive;
  Checkpoint<> archive2;
  
  //Test 1
