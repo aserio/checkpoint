@@ -29,12 +29,17 @@ class File {
   hpx::io::base_file file_handle_read;
   hpx::io::base_file file_handle_write;
   off_t position;
-  hpx::serialization::serialize_buffer<char> data; 
+//  hpx::serialization::serialize_buffer<char> data; 
+  std::vector<char> data; 
    
   bool is_open();
 //  ssize_t size();                   ADD AFTER YOU UPDATE PXFS
+  size_t size_data();
+  void resize_data(size_t count);
   void write();
   void write(off_t const offset);
+  void write_data(void const* address, size_t count, size_t current);
+  void read_data(void* address, size_t count, size_t current) const;
   void lseek(int whence); // Seek a point in the file
   void lseek(off_t offset, int whence); // Seek a point in the file
   void save (); // Write data to file
@@ -138,6 +143,15 @@ bool File::is_open(){
 // return size;
 //}
 
+size_t File::size_data() {
+ return data.size();
+}
+
+//resize_data()
+void File::resize_data(std::size_t count) {
+ return data.resize(data.size() + count);
+} 
+
 // write()
 void File::write() {
  file_handle_write.write(hpx::launch::sync, data);
@@ -145,6 +159,15 @@ void File::write() {
 
 void File::write(off_t const offset) {
  file_handle_write.pwrite(hpx::launch::sync, data, offset);
+}
+
+void File::write_data(void const* address, size_t count, size_t current) {
+ std::memcpy(address,&data[current], count);
+}
+
+//read()
+void File::read_data(void* address, size_t count, size_t current) const {
+  std::memcpy(&data[current], address, count);
 }
 
 //lseek()
@@ -202,4 +225,36 @@ void File::print() {
 void File::remove_file() {
  file_handle_write.close();
  file_handle_read.remove_file(hpx::launch::sync, file_name);
+}
+
+namespace hpx { namespace traits 
+ {
+  template<>
+  struct serialization_access_data<File>
+   : default_serialization_access_data<File>
+  {
+   static std::size_t size(File const& cont)
+   {
+    return cont.size_data();
+   }
+   
+   static void resize(File& cont, std::size_t count)
+   {
+    cont.resize_data(count);
+   }
+
+   static void write(File& cont, std::size_t count, std::size_t current,
+                     void const* address)
+   {
+    cont.write_data(address, count, current);
+   }
+   
+   // functions related to input operations   
+   static void read(File const& cont, std::size_t count, std::size_t current,
+                    void* address)
+   {
+    cont.read_data(address, count, current);
+   }
+  };
+ }
 }
