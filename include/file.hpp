@@ -21,6 +21,7 @@
 
 class File {
  public:
+  typedef hpx::serialization::serialize_buffer<char> buffer_type; 
   File (std::string file_name_arg); // Load a file
   File (std::string file_name_arg, size_t count); // Load a file
   File (std::string file_name_arg, size_t count, off_t offset); // Load a file
@@ -29,7 +30,7 @@ class File {
   hpx::io::base_file file_handle_read;
   hpx::io::base_file file_handle_write;
   off_t position;
-//  hpx::serialization::serialize_buffer<char> data; 
+//  hpx::serialization::serialize_buffer<char> buffer; 
   std::vector<char> data; 
    
   bool is_open();
@@ -38,8 +39,8 @@ class File {
   void resize_data(size_t count);
   void write();
   void write(off_t const offset);
-  void write_data(void const* address, size_t count, size_t current);
-  void read_data(void* address, size_t count, size_t current) const;
+  void write_data(void* address, size_t count, size_t current);
+  void read_data(void* address, size_t count, size_t current);
   void lseek(int whence); // Seek a point in the file
   void lseek(off_t offset, int whence); // Seek a point in the file
   void save (); // Write data to file
@@ -80,7 +81,11 @@ File::File(std::string file_name_arg) {
   //Read in file
   if(file_handle_read.is_open(hpx::launch::sync)) {
    file_name=file_name_arg;
-   data=file_handle_read.read(hpx::launch::sync, count);
+   data.resize(count);
+   buffer_type buffer(data.data(), data.size(), buffer_type::reference); 
+   buffer=file_handle_read.read(hpx::launch::sync, count);
+   hpx::cout<<buffer[0]<<buffer[1]<<buffer[2]<<std::endl;
+   hpx::cout<<data[0]<<data[1]<<data[2]<<std::endl;
   }
   else std::cerr<<"Error: No file found!"<<std::endl;
  }
@@ -104,7 +109,8 @@ File::File(std::string file_name_arg, size_t count) {
  //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
-  data=file_handle_read.read(hpx::launch::sync, count);
+  buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+  buffer=file_handle_read.read(hpx::launch::sync, count);
  }
  else std::cerr<<"Error: No file found!"<<std::endl;
 }
@@ -122,7 +128,8 @@ File::File(std::string file_name_arg, size_t count, off_t offset) {
  //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
-  data=file_handle_read.pread(hpx::launch::sync, count, offset);
+  buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+  buffer=file_handle_read.pread(hpx::launch::sync, count, offset);
  }
  else std::cerr<<"Error: No file found!"<<std::endl;
 }
@@ -154,19 +161,24 @@ void File::resize_data(std::size_t count) {
 
 // write()
 void File::write() {
- file_handle_write.write(hpx::launch::sync, data);
+ 
+ buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+// file_handle_write.write(hpx::launch::sync, data);
+ file_handle_write.write(hpx::launch::sync, buffer);
 }
 
 void File::write(off_t const offset) {
- file_handle_write.pwrite(hpx::launch::sync, data, offset);
+ buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+// file_handle_write.pwrite(hpx::launch::sync, data, offset);
+ file_handle_write.pwrite(hpx::launch::sync, buffer, offset);
 }
 
-void File::write_data(void const* address, size_t count, size_t current) {
- std::memcpy(address,&data[current], count);
+void File::write_data(void* address, size_t count, size_t current) {
+ std::memcpy(address, &data[current], count);
 }
 
 //read()
-void File::read_data(void* address, size_t count, size_t current) const {
+void File::read_data(void* address, size_t count, size_t current) {
   std::memcpy(&data[current], address, count);
 }
 
@@ -183,7 +195,8 @@ void File::lseek(off_t offset, int whence) {
 
 //save()
 void File::save() {
- file_handle_write.write(hpx::launch::sync, data);
+ buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+ file_handle_write.write(hpx::launch::sync, buffer);
 }
 
 void File::save(std::string new_file_name) {
@@ -198,7 +211,8 @@ void File::save(std::string new_file_name) {
    file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY | O_CREAT);
    file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
    if(file_handle_write.is_open(hpx::launch::sync)) {
-    file_handle_write.write(hpx::launch::sync, data);
+    buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+    file_handle_write.write(hpx::launch::sync, buffer);
    }
    else std::cerr<<"Error: File not created!"<<std::endl;
  }
@@ -209,7 +223,8 @@ void File::save(std::string new_file_name) {
                        new_file_name, 
                        O_WRONLY | O_CREAT);
   if(new_file_handle.is_open(hpx::launch::sync)) {
-   new_file_handle.write(hpx::launch::sync, data);  
+   buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
+   new_file_handle.write(hpx::launch::sync, buffer);  
   }
   else std::cerr<<"Error: File not created!"<<std::endl;
   new_file_handle.close();
@@ -218,7 +233,7 @@ void File::save(std::string new_file_name) {
 
 //print()
 void File::print() {
- hpx::cout<<data.data()<<std::endl;
+  hpx::cout<<data.data()<<std::endl;
 }
 
 //remove_file)
@@ -233,7 +248,7 @@ namespace hpx { namespace traits
   struct serialization_access_data<File>
    : default_serialization_access_data<File>
   {
-   static std::size_t size(File const& cont)
+   static std::size_t size(File& cont)
    {
     return cont.size_data();
    }
@@ -244,13 +259,13 @@ namespace hpx { namespace traits
    }
 
    static void write(File& cont, std::size_t count, std::size_t current,
-                     void const* address)
+                     void* address)
    {
     cont.write_data(address, count, current);
    }
    
    // functions related to input operations   
-   static void read(File const& cont, std::size_t count, std::size_t current,
+   static void read(File& cont, std::size_t count, std::size_t current,
                     void* address)
    {
     cont.read_data(address, count, current);

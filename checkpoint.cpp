@@ -92,10 +92,12 @@ int main() {
  }
 
  //Test 4
+ hpx::cout<<"Test 4"<<std::endl;
  File omg("omg.txt");
- hpx::serialization::serialize_buffer<char> char_buff("OMG! This is a test!", 20);
- omg.data=char_buff;
+// std::vector<char> char_buff("OMG! This is a test!");
+// std::vector<char> char_buff('O', 'M', 'G', '!', ' ','T', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', '!');
+// omg.data=char_buff;
  omg.print(); 
- omg.write();
+// omg.write();
  return 0;
 }
