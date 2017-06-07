@@ -57,7 +57,7 @@ struct file_wrapper
         std::memcpy(&data_[current], address, count);
     }
 
-    std::size_t size() const
+    std::size_t size_data() const
     {
         return data_.size();
     }
@@ -92,7 +92,7 @@ namespace hpx { namespace traits
     {
         static std::size_t size(file_wrapper const& cont)
         {
-            return cont.size();
+            return cont.size_data();
         }
 
         static void resize(file_wrapper& cont, std::size_t count)

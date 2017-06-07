@@ -99,5 +99,23 @@ int main() {
 // omg.data=char_buff;
  omg.print(); 
 // omg.write();
+
+ //Test 5
+ Checkpoint<File> archive4("test4.archive");
+ std::vector<int> test_vec;
+ for (int c=0; c<101; c++) {
+  test_vec.push_back(c);
+ }
+ store(archive4, test_vec);
+ 
+ //Test 6       Broken
+// hpx::cout<<"Test 6"<<std::endl;
+// std::vector<int> test_vec2;
+// resurrect(archive4, test_vec2);
+// if (std::equal(test_vec.begin(), test_vec.end(), 
+//          test_vec2.begin())){
+//  hpx::cout<<"I work!"<<std::endl;
+// }
+
  return 0;
 }

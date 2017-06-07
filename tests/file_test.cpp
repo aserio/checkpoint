@@ -18,20 +18,19 @@ int main() {
  //Test 1
  File file("test.txt");
  count=file.data.size();
- hpx::cout<<"Size of buffer: "<<count<<std::endl;
- file.print();
  file.save("test2.txt");
  
  //Test 2
  File file2("test2.txt", count);
- file2.print();
  file2.save("test3.txt");
  
  //Test 3
- File file3("test3.txt", count, offset);
- file3.print();
- hpx::cout<<file3.file_name<<std::endl;
+ File file3("test3.txt");
  file3.save();
+ 
+ //Test 4
+// file.remove_file();
+// file2.remove_file()
  file3.remove_file();
  
  return 0;
