@@ -29,13 +29,11 @@ class File {
   hpx::io::base_file file_handle_read;
   hpx::io::base_file file_handle_write;
   off_t position;
-//  hpx::serialization::serialize_buffer<char> buffer; 
   std::vector<char> data; 
    
   bool is_open();
 //  ssize_t size();                   ADD AFTER YOU UPDATE PXFS
-  size_t size()const;    //Work around to make it compile, .size_data() perfered
-//  size_t size_data()const;
+  size_t size_data()const;
   void resize_data(size_t count);
   void write();
   void write(off_t const offset);
@@ -110,12 +108,11 @@ File::File(std::string file_name_arg, size_t count) {
  //Read in file
  if(file_handle_read.is_open(hpx::launch::sync)) {
   file_name=file_name_arg;
+  data.resize(count);
   buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
   std::shared_ptr<hpx::io::server::local_file> pt =
     hpx::get_ptr<hpx::io::server::local_file>(file_handle_read.get_id()).get();
   pt->read_noaction(buffer, count);
-  hpx::cout<<static_cast<void *>(buffer.data())<<std::endl
-           <<static_cast<void *>(data.data())<<std::endl;
  }
  else std::cerr<<"Error: No file found!"<<std::endl;
 }
@@ -136,14 +133,10 @@ bool File::is_open(){
 // return size;
 //}
 
-size_t File::size() const {  //Workaround, size_data() below preferred
- return data.size();
-}
-/* 
 size_t File::size_data() const {
  return data.size();
 }
-*/
+
 
 //resize_data()
 void File::resize_data(std::size_t count) {
@@ -170,14 +163,6 @@ void File::write_data(void const* address, size_t count, size_t current) {
 void File::read(size_t const count, off_t const offset) {
  file_handle_read.pread(hpx::launch::sync, count, offset);
 }
-
-/*  Broken
-void read_noaction(hpx::io::base_file& handle, buffer_type& buffer, size_t count){
-  std::shared_ptr<hpx::io::server::local_file> pt =
-    hpx::get_ptr<hpx::io::server::local_file>(handle.get_id()).get();
-  pt->read_noaction(buffer, count);
-}
-*/
 
 void File::read_data(void* address, size_t count, size_t current)const {
   std::memcpy(address, &data[current], count);
@@ -251,8 +236,7 @@ namespace hpx { namespace traits
   {
    static std::size_t size(File const& cont)
    {
-    return cont.size(); //Work around, .size_data() preffered
-//    return cont.size_data();
+    return cont.size_data();
    }
    
    static void resize(File& cont, std::size_t count)

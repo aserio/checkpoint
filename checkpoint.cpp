@@ -95,10 +95,10 @@ int main() {
  hpx::cout<<"Test 4"<<std::endl;
  File omg("omg.txt");
 // std::vector<char> char_buff("OMG! This is a test!");
-// std::vector<char> char_buff('O', 'M', 'G', '!', ' ','T', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', '!');
-// omg.data=char_buff;
+ std::vector<char> char_buff={'O', 'M', 'G', '!', ' ','T', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', '!'};
+ omg.data=char_buff;
  omg.print(); 
-// omg.write();
+ omg.write();
 
  //Test 5
  Checkpoint<File> archive4("test4.archive");
@@ -108,14 +108,14 @@ int main() {
  }
  store(archive4, test_vec);
  
- //Test 6       Broken
-// hpx::cout<<"Test 6"<<std::endl;
-// std::vector<int> test_vec2;
-// resurrect(archive4, test_vec2);
-// if (std::equal(test_vec.begin(), test_vec.end(), 
-//          test_vec2.begin())){
-//  hpx::cout<<"I work!"<<std::endl;
-// }
+ //Test 6    
+ hpx::cout<<"Test 6"<<std::endl;
+ std::vector<int> test_vec2;
+ resurrect(archive4, test_vec2);
+ if (std::equal(test_vec.begin(), test_vec.end(), 
+          test_vec2.begin())){
+  hpx::cout<<"I work!"<<std::endl;
+ }
 
  return 0;
 }

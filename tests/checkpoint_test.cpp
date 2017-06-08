@@ -29,7 +29,7 @@ int main() {
  Checkpoint<> archive;
  Checkpoint<> archive2;
  
- //Test 1
+ //Test 1 - Store arbitrary variables
  hpx::cout<<"Test 1:"<<std::endl;
 
  //Print out initial variables
@@ -67,7 +67,7 @@ int main() {
   hpx::cout<<"I work!"<<std::endl;
  }
 
- //Test 2
+ //Test 2 - Test equal assignment
  hpx::cout<<"Test 2:"<<std::endl;
  
  archive2=archive;
@@ -79,16 +79,24 @@ int main() {
   hpx::cout<<"I work!"<<std::endl;
  }
 
- //Test 3
+ //Test 3 - Test Checkpoint<File>
  hpx::cout<<"Test 3:"<<std::endl;
  
- Checkpoint<> archive3;
- store(archive3, vec, integer);
- resurrect(archive3, vec2, integer2);
+ Checkpoint<File> archive3("archive3.archive");
+ std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
+ std::vector<char> vec_char2;
+ std::vector<int>  vec_int={1,2,3,4,5};
+ std::vector<int>  vec_int2;
+ store(archive3, vec_char, vec_int);
+ resurrect(archive3, vec_char2, vec_int2);
  
- if (std::equal(vec.begin(), vec.end(), vec2.begin()) && integer==integer2){
+ if (std::equal(vec_char.begin(), vec_char.end(), vec_char2.begin()) 
+      && std::equal(vec_int.begin(), vec_int.end(), vec_int2.begin())){
   hpx::cout<<"I work!"<<std::endl;
  }
-
+ 
+ //Clean up
+ archive3.data.remove_file();
+ 
  return 0;
 }
