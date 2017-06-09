@@ -12,11 +12,16 @@
 
 int main() {
 
+ //Set up testing infrastucture
+ size_t pass_counter=0;
+ size_t num_tests=3;
+
  size_t count;
  off_t offset=17;
+ std::string file_name="test.txt";
  
- //Test 1 - Create a file, fill it, save it, and save a new copy
- File file("test.txt");
+ //Test 1 - Create a file, fill it, save it, save a new copy, and close file
+ File file(file_name);
  std::vector<char> vec_char={'T','e','s','t',' ','t','e','x','t','\n'};
  for (int i=0; i<vec_char.size(); i++) {
   file.data.push_back(vec_char[i]);
@@ -24,6 +29,12 @@ int main() {
  file.save();
  count=file.data.size();
  file.save("test2.txt");
+ file.close();
+
+ if (access(file_name.c_str(), F_OK) ==0 &&
+     file.file_handle_read.is_open(hpx::launch::sync) ) {
+   pass_counter++;
+ }
  
  //Test 2 - Test constructor with count
  File file2("test2.txt", count);
@@ -33,15 +44,23 @@ int main() {
  File file3("test3.txt");
  File file4("test.txt");
  
- if(file.data == file3.data) {
-  hpx::cout<<"I work!"<<std::endl;
+ if(file4.data == file3.data && file3.data == file2.data) {
+  pass_counter+=2;
  }
  file3.save();
  
  //Clean up
- file.remove_file();
  file2.remove_file();
  file3.remove_file();
+ file4.remove_file();
+ 
+ if (pass_counter == num_tests) { 
+  hpx::cout<<"All File Tests Pass!"<<std::endl; 
+ } 
+ else { 
+  hpx::cout<<(num_tests - pass_counter)<<" of "<<num_tests
+           <<" File Tests Failed!"<<std::endl; 
+ }
  
  return 0;
 }

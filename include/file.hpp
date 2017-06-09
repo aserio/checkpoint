@@ -45,6 +45,8 @@ class File {
   void save (); // Write data to file
   void save(std::string new_file_name); // Write to a possibly new file  
   void print(); // Print out the contents of file_buffer
+  void open();
+  void close();
   void remove_file(); // Delete file 
   
   ~File () {
@@ -222,6 +224,18 @@ void File::print() {
   hpx::cout<<data.data()<<std::endl;
 }
 
+//open() 
+void File::open() { 
+  file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY);
+  file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
+}
+
+//close()
+void File::close() {
+   file_handle_read.close();
+   file_handle_write.close();
+}
+ 
 //remove_file)
 void File::remove_file() {
  file_handle_write.close();

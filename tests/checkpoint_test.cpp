@@ -14,6 +14,11 @@
 // Main 
 int main() {
 
+ //Set up testing infrastructure
+ size_t pass_counter=0;
+ size_t num_tests=3;
+ 
+ //Initialize variables
  char character='d';
  char character2;
  int integer=10;
@@ -30,6 +35,7 @@ int main() {
  Checkpoint<> archive2;
  
  //Test 1 - Store arbitrary variables
+/*
  hpx::cout<<"Test 1:"<<std::endl;
 
  //Print out initial variables
@@ -44,11 +50,13 @@ int main() {
   if (vec.size() != i+1 ) hpx::cout<<vec[i];
   else hpx::cout<<vec[i]<<std::endl;
  }
+*/
  
  store(archive, character, integer, flt, boolean, str, vec);
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
  
  //Print out resurected variables 
+/*
  hpx::cout<<"Resurrected Variables"<<std::endl
           <<" char= "<<character2<<std::endl
           <<" int= "<<integer2<<std::endl
@@ -60,15 +68,16 @@ int main() {
   if (vec2.size() != i+1 ) hpx::cout<<vec2[i];
   else hpx::cout<<vec2[i]<<std::endl;
  }
+*/
 
  if (character == character2 && integer == integer2 && flt == flt2
       && boolean == boolean2 && str == str2 
       && std::equal(vec.begin(), vec.end(), vec2.begin())){
-  hpx::cout<<"I work!"<<std::endl;
+  pass_counter++;
  }
 
  //Test 2 - Test equal assignment
- hpx::cout<<"Test 2:"<<std::endl;
+ //hpx::cout<<"Test 2:"<<std::endl;
  
  archive2=archive;
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
@@ -76,11 +85,11 @@ int main() {
  if (character == character2 && integer == integer2 && flt == flt2
       && boolean == boolean2 && str == str2 
       && std::equal(vec.begin(), vec.end(), vec2.begin())){
-  hpx::cout<<"I work!"<<std::endl;
+  pass_counter++;
  }
 
  //Test 3 - Test Checkpoint<File>
- hpx::cout<<"Test 3:"<<std::endl;
+ //hpx::cout<<"Test 3:"<<std::endl;
  
  Checkpoint<File> archive3("archive3.archive");
  std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
@@ -92,11 +101,20 @@ int main() {
  
  if (std::equal(vec_char.begin(), vec_char.end(), vec_char2.begin()) 
       && std::equal(vec_int.begin(), vec_int.end(), vec_int2.begin())){
-  hpx::cout<<"I work!"<<std::endl;
+  pass_counter++;
  }
  
  //Clean up
  archive3.data.remove_file();
+ 
+ //Report results of test
+ if ( pass_counter == num_tests) { 
+  hpx::cout<<"All Checkpoint Test Pass!"<<std::endl;
+ }
+ else {
+  hpx::cout<<(num_tests - pass_counter)<<" of "<<num_tests
+           <<" Checkpoint Tests Failed!"<<std::endl;
+ }
  
  return 0;
 }
