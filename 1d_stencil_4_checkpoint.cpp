@@ -82,8 +82,6 @@ public:
 private:
     std::unique_ptr<double[]> data_;
     std::size_t size_;
-
-    HPX_MOVABLE_ONLY(partition_data);
 };
 
 std::ostream& operator<<(std::ostream& os, partition_data const& c)
@@ -97,6 +95,18 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
     }
     os << "}";
     return os;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Checkpoint Function
+void save(std::vector<hpx::shared_future<partition_data>> const& status) {
+//void save(space const& state) {
+ Checkpoint<File>archive("1d.archive");
+ int z=10;
+ int y=0;
+ store(archive, z);
+ resurrect(archive, y);
+ hpx::cout<<y<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -178,15 +188,10 @@ struct stepper
             
             // Checkpoint 
             if ((t/(nt-1))==1) { 
-             
-             int z=10;
-             Checkpoint<> archive;
-           //  unwrapped(store(archive, z, next));
-             store(archive, z);
              hpx::cout<<nt<<std::endl;
-             int y; 
-             resurrect(archive, y);
-             hpx::cout<<y<<std::endl;
+             //save();
+             hpx::future<void> check_f = dataflow (hpx::launch::async, save, next);
+             check_f.get();
             }
             
             // every nd time steps, attach additional continuation which will
