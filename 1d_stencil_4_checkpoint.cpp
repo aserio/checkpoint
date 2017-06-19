@@ -82,6 +82,13 @@ public:
 private:
     std::unique_ptr<double[]> data_;
     std::size_t size_;
+    
+//    // Serialization Definitions
+//    friend class hpx::serialization::access;
+//    template<typename Archive>
+//    void serialize(Archive& ar, const unsigned int version) {
+//     ar & data_ & size_;
+//    }
 };
 
 std::ostream& operator<<(std::ostream& os, partition_data const& c)
@@ -99,14 +106,14 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Checkpoint Function
-void save(std::vector<hpx::shared_future<partition_data>> const& status) {
-//void save(space const& state) {
+void save(partition_data const& status) {
  Checkpoint<File>archive("1d.archive");
- int z=10;
- int y=0;
- store(archive, z);
- resurrect(archive, y);
- hpx::cout<<y<<std::endl;
+// store(archive, status);
+// int z=10;
+// int y=0;
+// store(archive, z);
+// resurrect(archive, y);
+// hpx::cout<<y<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -183,16 +190,25 @@ struct stepper
                         hpx::launch::async, Op,
                         current[idx(i, -1, np)], current[i], current[idx(i, +1, np)]
                     );
-
+                
+                //Checkpoint
+                if (t % 44 == 0 && t != 0 ) {
+//                 next[i]=next[i].then( [](partition && p) {
+//                                        checkpoint(backup, p.get());
+//                                        return p;
+//                                       }
+//                                      )
+                   hpx::cout<<"Hi: "<<t<<std::endl;
+             }
             }
             
             // Checkpoint 
-            if ((t/(nt-1))==1) { 
-             hpx::cout<<nt<<std::endl;
+//            if ((t/(nt-1))==1) { 
+//             hpx::cout<<nt<<std::endl;
              //save();
-             hpx::future<void> check_f = dataflow (hpx::launch::async, save, next);
-             check_f.get();
-            }
+//             hpx::future<void> check_f = dataflow (hpx::launch::async, save, next);
+//             check_f.get();
+//            }
             
             // every nd time steps, attach additional continuation which will
             // trigger the semaphore once computation has reached this point

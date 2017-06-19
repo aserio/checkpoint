@@ -28,6 +28,8 @@
 //    - Wrap serialized data in a component?
 //       -> Return a GID
 //    - Pass a component to store
+//    - Add traits
+//       -> Write trait
 //
 // TRYING TO GET A COMPONENT TO TAKE TEMPLATES D:  D:  D:
 

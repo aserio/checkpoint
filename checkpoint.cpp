@@ -107,6 +107,7 @@ int main() {
   test_vec.push_back(c);
  }
  store(archive4, test_vec);
+ archive4.data.write();
  
  //Test 6    
  hpx::cout<<"Test 6"<<std::endl;
@@ -116,6 +117,6 @@ int main() {
           test_vec2.begin())){
   hpx::cout<<"I work!"<<std::endl;
  }
-
+ 
  return 0;
 }
