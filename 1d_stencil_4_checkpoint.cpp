@@ -13,6 +13,11 @@
 // enables tuning the performance for the optimal grain size of the
 // computation. This example is still fully local but demonstrates nice
 // scalability on SMP machines.
+//
+// To-do:
+//   - Get the Checkpoint file written to disk in order and in a thread safe
+//     manner
+//
 
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
@@ -55,40 +60,38 @@ inline std::size_t idx(std::size_t i, int dir, std::size_t size)
 // Our partition data type
 struct partition_data
 {
+private:
+ typedef hpx::serialization::serialize_buffer<double> buffer_type;
 public:
     partition_data(std::size_t size)
-      : data_(new double[size]), size_(size)
+      : data_(new double[size], size, buffer_type::take), 
+        size_(size)
     {}
 
     partition_data(std::size_t size, double initial_value)
-      : data_(new double[size]),
+      : data_(new double[size], size, buffer_type::take), 
         size_(size)
     {
         double base_value = double(initial_value * size);
         for (std::size_t i = 0; i != size; ++i)
             data_[i] = base_value + double(i);
     }
-
-    partition_data(partition_data && other)
-      : data_(std::move(other.data_))
-      , size_(other.size_)
-    {}
-
+    
     double& operator[](std::size_t idx) { return data_[idx]; }
     double operator[](std::size_t idx) const { return data_[idx]; }
 
     std::size_t size() const { return size_; }
 
 private:
-    std::unique_ptr<double[]> data_;
+    buffer_type data_;
     std::size_t size_;
     
-//    // Serialization Definitions
-//    friend class hpx::serialization::access;
-//    template<typename Archive>
-//    void serialize(Archive& ar, const unsigned int version) {
-//     ar & data_ & size_;
-//    }
+    // Serialization Definitions
+    friend class hpx::serialization::access;
+    template<typename Volume>
+    void serialize(Volume& vol, const unsigned int version) {
+     vol & data_ & size_;
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, partition_data const& c)
@@ -107,13 +110,12 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 ///////////////////////////////////////////////////////////////////////////////
 // Checkpoint Function
 void save(partition_data const& status) {
+ std::cout<<"Status: "<<status<<std::endl;
  Checkpoint<File>archive("1d.archive");
-// store(archive, status);
-// int z=10;
-// int y=0;
-// store(archive, z);
-// resurrect(archive, y);
-// hpx::cout<<y<<std::endl;
+ store(archive, status);
+ partition_data status2(status.size());
+ resurrect(archive, status2);
+ std::cout<<"Status2: "<<status2<<std::endl;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,22 +195,16 @@ struct stepper
                 
                 //Checkpoint
                 if (t % 44 == 0 && t != 0 ) {
-//                 next[i]=next[i].then( [](partition && p) {
-//                                        checkpoint(backup, p.get());
-//                                        return p;
-//                                       }
-//                                      )
-                   hpx::cout<<"Hi: "<<t<<std::endl;
+                 next[i]=next[i].then( [](partition && p) {
+                                        partition_data value(p.get());
+                                        save(value);
+                                        partition f_value=
+                                               hpx::make_ready_future(value);
+                                        return f_value;
+                                       }
+                                      );
              }
             }
-            
-            // Checkpoint 
-//            if ((t/(nt-1))==1) { 
-//             hpx::cout<<nt<<std::endl;
-             //save();
-//             hpx::future<void> check_f = dataflow (hpx::launch::async, save, next);
-//             check_f.get();
-//            }
             
             // every nd time steps, attach additional continuation which will
             // trigger the semaphore once computation has reached this point

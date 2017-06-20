@@ -53,7 +53,7 @@ void store (Checkpoint<C>& c, T&& ...t) {
   
   //Serialize data
   int const sequencer[]= {  //Trick to expand the variable pack
-   (ar<<t, 0)...};          //Takes advantage of the comma operator
+   (ar << t, 0)...};          //Takes advantage of the comma operator
  }
 }
 
