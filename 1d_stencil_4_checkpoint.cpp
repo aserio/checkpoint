@@ -17,6 +17,7 @@
 // To-do:
 //   - Get the Checkpoint file written to disk in order and in a thread safe
 //     manner
+//     -> Check that the result is correct
 //
 
 #include <hpx/hpx_init.hpp>
@@ -118,6 +119,25 @@ void save(partition_data const& status) {
  std::cout<<"Status2: "<<status2<<std::endl;
 }
 
+ //Experiment
+ void save(File& file_archive, partition_data const& status, std::size_t index){
+  
+  Checkpoint<> archive;
+  store(archive, status);
+
+  if(index==0) { //////////////////////////////Souldn't need this
+    for (int i=0; i < status.size() ; i++) {
+      file_archive.data[i]=status[i];
+    }
+  }
+  else {
+    std::size_t loop_idx=(status.size()-1)*index;
+    for (std::size_t i=loop_idx; i < (loop_idx+status.size()) ; i++){
+      file_archive.data[i]=status[i];
+    }
+   } 
+ }
+
 ///////////////////////////////////////////////////////////////////////////////
 struct stepper
 {
@@ -159,6 +179,9 @@ struct stepper
         using hpx::dataflow;
         using hpx::util::unwrapped;
 
+        File file_archive("1d.archive");
+        file_archive.resize_data(np*nx);
+
         // U[t][i] is the state of position i at time t.
         std::vector<space> U(2);
         for (space& s: U)
@@ -195,15 +218,34 @@ struct stepper
                 
                 //Checkpoint
                 if (t % 44 == 0 && t != 0 ) {
-                 next[i]=next[i].then( [](partition && p) {
+                 next[i]=next[i].then( [&file_archive, i](partition && p) {
                                         partition_data value(p.get());
-                                        save(value);
+                                        save(file_archive, value, i);
                                         partition f_value=
                                                hpx::make_ready_future(value);
                                         return f_value;
                                        }
                                       );
              }
+            }
+             
+            if (t % 44 == 0 && t != 0 ) {
+              hpx::future<space> write_ready = 
+                            hpx::when_all(next);
+              hpx::future<void> done = write_ready.then(
+                                                       [&file_archive](auto s)-> void{ 
+                                                           file_archive.write();
+                                                      } 
+                                                    );
+              done.get();
+              /*
+              //Check
+              Checkpoint<File> double_check("1d.archive");
+              double_check.data.resize_data(np*nx);
+              std::vector<char> dc;
+              resurrect(double_check, dc);
+              if (file_archive.data == dc) { std::cout<<"Check Passed!"<<std::endl; }
+              */
             }
             
             // every nd time steps, attach additional continuation which will
