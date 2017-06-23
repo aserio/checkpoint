@@ -64,6 +64,11 @@ struct partition_data
 private:
  typedef hpx::serialization::serialize_buffer<double> buffer_type;
 public:
+//    partition_data()
+//      : data_(new double[10], 10, buffer_type::take),
+//        size_(10)
+//    {}
+
     partition_data(std::size_t size)
       : data_(new double[size], size, buffer_type::take), 
         size_(size)
@@ -120,11 +125,14 @@ void save(partition_data const& status) {
 }
 
  //Experiment
- void save(File& file_archive, partition_data const& status, std::size_t index){
+ void save(File& file_archive, partition_data const& status, std::size_t index, std::uint64_t np){
   
   Checkpoint<> archive;
   store(archive, status);
-
+  if (file_archive.size_data()<archive.data.size()) {
+     file_archive.resize_data(np*archive.data.size());
+  }
+/*
   if(index==0) { //////////////////////////////Souldn't need this
     for (int i=0; i < status.size() ; i++) {
       file_archive.data[i]=status[i];
@@ -135,7 +143,13 @@ void save(partition_data const& status) {
     for (std::size_t i=loop_idx; i < (loop_idx+status.size()) ; i++){
       file_archive.data[i]=status[i];
     }
-   } 
+   }
+*/
+    std::size_t loop_idx=(archive.data.size()-1)*index;
+    for (std::size_t i=loop_idx; i < (loop_idx+archive.data.size()) ; i++){
+      file_archive.data[i]=archive.data[i];
+    }
+ 
  }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,7 +194,7 @@ struct stepper
         using hpx::util::unwrapped;
 
         File file_archive("1d.archive");
-        file_archive.resize_data(np*nx);
+//        file_archive.resize_data(np*nx);
 
         // U[t][i] is the state of position i at time t.
         std::vector<space> U(2);
@@ -218,9 +232,9 @@ struct stepper
                 
                 //Checkpoint
                 if (t % 44 == 0 && t != 0 ) {
-                 next[i]=next[i].then( [&file_archive, i](partition && p) {
+                 next[i]=next[i].then( [&file_archive, i, np](partition && p) {
                                         partition_data value(p.get());
-                                        save(file_archive, value, i);
+                                        save(file_archive, value, i, np);
                                         partition f_value=
                                                hpx::make_ready_future(value);
                                         return f_value;
@@ -230,22 +244,26 @@ struct stepper
             }
              
             if (t % 44 == 0 && t != 0 ) {
-              hpx::future<space> write_ready = 
-                            hpx::when_all(next);
-              hpx::future<void> done = write_ready.then(
-                                                       [&file_archive](auto s)-> void{ 
-                                                           file_archive.write();
-                                                      } 
-                                                    );
-              done.get();
-              /*
-              //Check
+              hpx::future<void> write_ready = 
+               hpx::when_all(next).then([&file_archive](hpx::future<space>&& f_s)-> void{ 
+                                                         file_archive.write();
+                                                        }
+                                        );  
+              write_ready.get();
+              
+         /*    //Check    STILL Broken- Doesn't compile w/o part_data() and aborts when supplied
+              file_archive.close();
               Checkpoint<File> double_check("1d.archive");
-              double_check.data.resize_data(np*nx);
-              std::vector<char> dc;
+              partition_data filler(nx);  
+              std::vector<partition_data> dc(np,filler) ;
+            //  std::vector<partition_data> dc;
               resurrect(double_check, dc);
-              if (file_archive.data == dc) { std::cout<<"Check Passed!"<<std::endl; }
-              */
+            //  if (next == dc.data()) { std::cout<<"Check Passed!"<<std::endl; }
+              for (int i=0; i<dc.size(); i++) {
+                std::cout<<next[i].get()<<", "<<dc[i]<<std::endl;
+              //  if (next[i].get()==dc[i]) { std::cout<<"Check Passed!"<<std::endl; }
+              }
+         */    
             }
             
             // every nd time steps, attach additional continuation which will
