@@ -19,11 +19,11 @@
 #include <hpxio/server/local_file.hpp>
 #include <hpxio/base_file.hpp>
 
-class File {
+class hpxio_file {
  public:
   typedef hpx::serialization::serialize_buffer<char> buffer_type; 
-  File (std::string file_name_arg); // Load a file
-  File (std::string file_name_arg, size_t count); // Load a file
+  hpxio_file (std::string file_name_arg); // Load a file
+  hpxio_file (std::string file_name_arg, size_t count); // Load a file
   
   std::string file_name;
   hpx::io::base_file file_handle_read;
@@ -49,14 +49,14 @@ class File {
   void close();
   void remove_file(); // Delete file 
   
-  ~File () {
+  ~hpxio_file () {
    file_handle_read.close();
    file_handle_write.close();
   }
 };
 
 // Constructors
-File::File(std::string file_name_arg) {
+hpxio_file::hpxio_file(std::string file_name_arg) {
  size_t count;
  //Instantiate Read and Write handles
  file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
@@ -97,7 +97,7 @@ File::File(std::string file_name_arg) {
  }
 }
 
-File::File(std::string file_name_arg, size_t count) {
+hpxio_file::hpxio_file(std::string file_name_arg, size_t count) {
  
  //Instantiate Read and Write handles
  file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
@@ -120,7 +120,7 @@ File::File(std::string file_name_arg, size_t count) {
 }
 
 //is_open()
-bool File::is_open(){
+bool hpxio_file::is_open(){
  if(file_handle_read.is_open(hpx::launch::sync) &&
     file_handle_write.is_open(hpx::launch::sync) ) {
   return true;
@@ -129,65 +129,65 @@ bool File::is_open(){
 }
 
 //size()                                 ADD AFTER YOU UPDATE PXFS
-//ssize_t File::size() {
+//ssize_t hpxio_file::size() {
 // ssize_t size;
 // file_handle_read.size(hpx::launch::sync);
 // return size;
 //}
 
-size_t File::size_data() const {
+size_t hpxio_file::size_data() const {
  return data.size();
 }
 
 
 //resize_data()
-void File::resize_data(std::size_t count) {
+void hpxio_file::resize_data(std::size_t count) {
  return data.resize(data.size() + count);
 } 
 
 // write()
-void File::write() {
+void hpxio_file::write() {
  
  buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
  file_handle_write.write(hpx::launch::sync, buffer);
 }
 
-void File::write(off_t const offset) {
+void hpxio_file::write(off_t const offset) {
  buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
  file_handle_write.pwrite(hpx::launch::sync, buffer, offset);
 }
 
-void File::write_data(void const* address, size_t count, size_t current) {
+void hpxio_file::write_data(void const* address, size_t count, size_t current) {
   std::memcpy(&data[current], address, count);
 }
 
 //read()
-void File::read(size_t const count, off_t const offset) {
+void hpxio_file::read(size_t const count, off_t const offset) {
  file_handle_read.pread(hpx::launch::sync, count, offset);
 }
 
-void File::read_data(void* address, size_t count, size_t current)const {
+void hpxio_file::read_data(void* address, size_t count, size_t current)const {
   std::memcpy(address, &data[current], count);
 }
 
 //lseek()
-void File::lseek(int whence) {
+void hpxio_file::lseek(int whence) {
  position = file_handle_read.lseek(hpx::launch::sync, 0, whence);
  file_handle_write.lseek(hpx::launch::sync, 0, whence);
 }
 
-void File::lseek(off_t offset, int whence) {
+void hpxio_file::lseek(off_t offset, int whence) {
  position = file_handle_read.lseek(hpx::launch::sync, offset, whence);
  file_handle_write.lseek(hpx::launch::sync, offset, whence);
 }
 
 //save()
-void File::save() {
+void hpxio_file::save() {
  buffer_type buffer(data.data(),data.size(),buffer_type::reference); 
  file_handle_write.write(hpx::launch::sync, buffer);
 }
 
-void File::save(std::string new_file_name) {
+void hpxio_file::save(std::string new_file_name) {
  if (data.size() == 0) {
   std::cerr<<"Error: No data to copy!"<<std::endl;
  }
@@ -220,24 +220,24 @@ void File::save(std::string new_file_name) {
 }
 
 //print()
-void File::print() {
+void hpxio_file::print() {
   hpx::cout<<data.data()<<std::endl;
 }
 
 //open() 
-void File::open() { 
+void hpxio_file::open() { 
   file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY);
   file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
 }
 
 //close()
-void File::close() {
+void hpxio_file::close() {
    file_handle_read.close();
    file_handle_write.close();
 }
  
 //remove_file)
-void File::remove_file() {
+void hpxio_file::remove_file() {
  file_handle_write.close();
  file_handle_read.remove_file(hpx::launch::sync, file_name);
 }
@@ -245,27 +245,27 @@ void File::remove_file() {
 namespace hpx { namespace traits 
  {
   template<>
-  struct serialization_access_data<File>
-   : default_serialization_access_data<File>
+  struct serialization_access_data<hpxio_file>
+   : default_serialization_access_data<hpxio_file>
   {
-   static std::size_t size(File const& cont)
+   static std::size_t size(hpxio_file const& cont)
    {
     return cont.size_data();
    }
    
-   static void resize(File& cont, std::size_t count)
+   static void resize(hpxio_file& cont, std::size_t count)
    {
     cont.resize_data(count);
    }
 
-   static void write(File& cont, std::size_t count, std::size_t current,
+   static void write(hpxio_file& cont, std::size_t count, std::size_t current,
                      void const* address)
    {
     cont.write_data(address, count, current);
    }
    
    // functions related to input operations   
-   static void read(File const& cont, std::size_t count, std::size_t current,
+   static void read(hpxio_file const& cont, std::size_t count, std::size_t current,
                     void* address)
    {
     cont.read_data(address, count, current);

@@ -8,7 +8,7 @@
 // and HPXIO.
 
 #include <hpx/hpx_main.hpp>
-#include <file.hpp>
+#include <hpxio_file.hpp>
 
 int main() {
 
@@ -21,7 +21,7 @@ int main() {
  std::string file_name="test.txt";
  
  //Test 1 - Create a file, fill it, save it, save a new copy, and close file
- File file(file_name);
+ hpxio_file file(file_name);
  std::vector<char> vec_char={'T','e','s','t',' ','t','e','x','t','\n'};
  for (int i=0; i<vec_char.size(); i++) {
   file.data.push_back(vec_char[i]);
@@ -37,12 +37,12 @@ int main() {
  }
  
  //Test 2 - Test constructor with count
- File file2("test2.txt", count);
+ hpxio_file file2("test2.txt", count);
  file2.save("test3.txt");
  
  //Test 3 - Test that all is working correctly
- File file3("test3.txt");
- File file4("test.txt");
+ hpxio_file file3("test3.txt");
+ hpxio_file file4("test.txt");
  
  if(file4.data == file3.data && file3.data == file2.data) {
   pass_counter+=2;

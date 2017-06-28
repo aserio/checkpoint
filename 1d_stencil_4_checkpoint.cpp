@@ -31,7 +31,7 @@
 
 #include "print_time_results.hpp"
 
-#include <file.hpp>
+#include <hpxio_file.hpp>
 #include <checkpoint.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,7 +114,7 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 
 void save(partition_data const& status, std::string file_name, std::size_t timestep, std::size_t index) {
   file_name=file_name+std::to_string(timestep)+"_part"+std::to_string(index);
-  Checkpoint<File> file_archive(file_name);
+  Checkpoint<hpxio_file> file_archive(file_name);
   store(file_archive, status);
   
 /*  //Check to see if store is working
@@ -252,7 +252,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     if (vm.count("no-header"))
         header = false;
 
-    //File test_file("test.txt");
+    //hpxio_file test_file("test.txt");
     //test_file.print();
     
     // Create the stepper object

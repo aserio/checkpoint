@@ -8,7 +8,7 @@
 // 
 
 #include <hpx/hpx_main.hpp>
-#include <file.hpp>
+#include <hpxio_file.hpp>
 #include <checkpoint.hpp>
 
 // Main 
@@ -93,7 +93,7 @@ int main() {
 
  //Test 4
  hpx::cout<<"Test 4"<<std::endl;
- File omg("omg.txt");
+ hpxio_file omg("omg.txt");
 // std::vector<char> char_buff("OMG! This is a test!");
  std::vector<char> char_buff={'O', 'M', 'G', '!', ' ','T', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', '!'};
  omg.data=char_buff;
@@ -101,7 +101,7 @@ int main() {
  omg.write();
 
  //Test 5
- Checkpoint<File> archive4("test4.archive");
+ Checkpoint<hpxio_file> archive4("test4.archive");
  std::vector<int> test_vec;
  for (int c=0; c<101; c++) {
   test_vec.push_back(c);

@@ -8,7 +8,7 @@
 // 
 
 #include <hpx/hpx_main.hpp>
-#include <file.hpp>
+#include <hpxio_file.hpp>
 #include <checkpoint.hpp>
 
 // Main 
@@ -88,10 +88,10 @@ int main() {
   pass_counter++;
  }
 
- //Test 3 - Test Checkpoint<File>
+ //Test 3 - Test Checkpoint<hpxio_file>
  //hpx::cout<<"Test 3:"<<std::endl;
  
- Checkpoint<File> archive3("archive3.archive");
+ Checkpoint<hpxio_file> archive3("archive3.archive");
  std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
  std::vector<char> vec_char2;
  std::vector<int>  vec_int={1,2,3,4,5};
