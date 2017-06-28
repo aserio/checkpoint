@@ -14,10 +14,6 @@
 // computation. This example is still fully local but demonstrates nice
 // scalability on SMP machines.
 //
-// To-do:
-//   - Get the Checkpoint file written to disk in order and in a thread safe
-//     manner
-//     -> Check that the result is correct
 //
 
 #include <hpx/hpx_init.hpp>
@@ -64,10 +60,10 @@ struct partition_data
 private:
  typedef hpx::serialization::serialize_buffer<double> buffer_type;
 public:
-//    partition_data()
-//      : data_(new double[10], 10, buffer_type::take),
-//        size_(10)
-//    {}
+    partition_data()
+      : data_(),
+        size_(0)
+    {}
 
     partition_data(std::size_t size)
       : data_(new double[size], size, buffer_type::take), 
@@ -115,43 +111,23 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Checkpoint Function
-void save(partition_data const& status) {
- std::cout<<"Status: "<<status<<std::endl;
- Checkpoint<File>archive("1d.archive");
- store(archive, status);
- partition_data status2(status.size());
- resurrect(archive, status2);
- std::cout<<"Status2: "<<status2<<std::endl;
-}
 
- //Experiment
- void save(File& file_archive, partition_data const& status, std::size_t index, std::uint64_t np){
+void save(partition_data const& status, std::string file_name, std::size_t timestep, std::size_t index) {
+  file_name=file_name+std::to_string(timestep)+"_part"+std::to_string(index);
+  Checkpoint<File> file_archive(file_name);
+  store(file_archive, status);
   
-  Checkpoint<> archive;
-  store(archive, status);
-  if (file_archive.size_data()<archive.data.size()) {
-     file_archive.resize_data(np*archive.data.size());
+/*  //Check to see if store is working
+  Checkpoint<> do_i_work;
+  partition_data test_part(status.size());
+  resurrect(file_archive, test_part);
+  for(int y=0; y < status.size(); y++) {
+    if (status[y]==test_part[y]) { std::cout<<"I WORK!"<<std::endl; }
   }
-/*
-  if(index==0) { //////////////////////////////Souldn't need this
-    for (int i=0; i < status.size() ; i++) {
-      file_archive.data[i]=status[i];
-    }
-  }
-  else {
-    std::size_t loop_idx=(status.size()-1)*index;
-    for (std::size_t i=loop_idx; i < (loop_idx+status.size()) ; i++){
-      file_archive.data[i]=status[i];
-    }
-   }
-*/
-    std::size_t loop_idx=(archive.data.size()-1)*index;
-    for (std::size_t i=loop_idx; i < (loop_idx+archive.data.size()) ; i++){
-      file_archive.data[i]=archive.data[i];
-    }
- 
- }
-
+*/  
+  file_archive.data.write();
+  file_archive.data.close();
+}
 ///////////////////////////////////////////////////////////////////////////////
 struct stepper
 {
@@ -193,8 +169,7 @@ struct stepper
         using hpx::dataflow;
         using hpx::util::unwrapped;
 
-        File file_archive("1d.archive");
-//        file_archive.resize_data(np*nx);
+        std::string file_name="1d.archive";
 
         // U[t][i] is the state of position i at time t.
         std::vector<space> U(2);
@@ -232,38 +207,16 @@ struct stepper
                 
                 //Checkpoint
                 if (t % 44 == 0 && t != 0 ) {
-                 next[i]=next[i].then( [&file_archive, i, np](partition && p) {
+                 next[i]=next[i].then( [file_name,nt,i](partition && p) {
                                         partition_data value(p.get());
-                                        save(file_archive, value, i, np);
+                                        save(value, file_name, nt, i);
                                         partition f_value=
                                                hpx::make_ready_future(value);
                                         return f_value;
+
                                        }
                                       );
              }
-            }
-             
-            if (t % 44 == 0 && t != 0 ) {
-              hpx::future<void> write_ready = 
-               hpx::when_all(next).then([&file_archive](hpx::future<space>&& f_s)-> void{ 
-                                                         file_archive.write();
-                                                        }
-                                        );  
-              write_ready.get();
-              
-         /*    //Check    STILL Broken- Doesn't compile w/o part_data() and aborts when supplied
-              file_archive.close();
-              Checkpoint<File> double_check("1d.archive");
-              partition_data filler(nx);  
-              std::vector<partition_data> dc(np,filler) ;
-            //  std::vector<partition_data> dc;
-              resurrect(double_check, dc);
-            //  if (next == dc.data()) { std::cout<<"Check Passed!"<<std::endl; }
-              for (int i=0; i<dc.size(); i++) {
-                std::cout<<next[i].get()<<", "<<dc[i]<<std::endl;
-              //  if (next[i].get()==dc[i]) { std::cout<<"Check Passed!"<<std::endl; }
-              }
-         */    
             }
             
             // every nd time steps, attach additional continuation which will
