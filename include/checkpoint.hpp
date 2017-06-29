@@ -42,6 +42,13 @@ struct Checkpoint {
  template <typename ... Ts>
  Checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
  T data;
+
+ //Serialization Definition
+ friend class hpx::serialization::access;
+ template<typename Volume>
+ void serialize(Volume& vol, const unsigned int version) {
+  vol & data;
+ }
 };
 
 //Store function

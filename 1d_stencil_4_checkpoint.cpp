@@ -112,6 +112,34 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 ///////////////////////////////////////////////////////////////////////////////
 // Checkpoint Function
 
+struct backup {
+  std::vector<Checkpoint<>> bin;
+  std::string file_name_;
+  Checkpoint<hpxio_file> file_archive;
+
+  backup(std::string file_name, size_t np)
+   : bin(np),
+     file_name_(file_name),
+     file_archive(file_name)
+  {}
+  ~backup() {
+    file_archive.data.close();
+  }
+
+  void save(partition_data const& status, std::size_t timestep, std::size_t index) {
+    store(bin[index], status);
+  }
+
+  void write() {
+    store(file_archive, bin);
+    file_archive.data.write();
+  }
+  
+  void revive(std::vector<partition_data>& state, std::size_t index) {
+    resurrect(bin[index], state);
+  }
+};
+
 void save(partition_data const& status, std::string file_name, std::size_t timestep, std::size_t index) {
   file_name=file_name+std::to_string(timestep)+"_part"+std::to_string(index);
   Checkpoint<hpxio_file> file_archive(file_name);
@@ -170,6 +198,8 @@ struct stepper
         using hpx::util::unwrapped;
 
         std::string file_name="1d.archive";
+        backup container(file_name, np);
+        std::vector<hpx::future<void>> backup_complete;
 
         // U[t][i] is the state of position i at time t.
         std::vector<space> U(2);
@@ -207,9 +237,10 @@ struct stepper
                 
                 //Checkpoint
                 if (t % 44 == 0 && t != 0 ) {
-                 next[i]=next[i].then( [file_name,nt,i](partition && p) {
+                 next[i]=next[i].then( [&container,nt,i](partition && p) {
                                         partition_data value(p.get());
-                                        save(value, file_name, nt, i);
+        //                                save(value, file_name, nt, i);
+                                        container.save(value, nt, i);
                                         partition f_value=
                                                hpx::make_ready_future(value);
                                         return f_value;
@@ -217,6 +248,15 @@ struct stepper
                                        }
                                       );
              }
+            }
+            
+            //Print Checkpoint
+            if (t%44==0 && t!=0) {
+  //           hpx::future<void> f_print = hpx::when_all(next).then(
+             hpx::future<void> f_print = hpx::when_all(next).then(
+               [&container](hpx::future<space>&& f_s){ container.write(); }                                     
+                                                    );
+             backup_complete.push_back(std::move(f_print));
             }
             
             // every nd time steps, attach additional continuation which will
@@ -235,6 +275,9 @@ struct stepper
             // will resume this thread once the computation has caught up
             sem.wait(t);
         }
+        
+        // Wait on Checkpoint Printing
+        hpx::wait_all(backup_complete);
 
         // Return the solution at time-step 'nt'.
         return hpx::when_all(U[nt % 2]);
