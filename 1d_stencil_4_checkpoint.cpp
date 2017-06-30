@@ -1,5 +1,6 @@
 //  Copyright (c) 2014 Hartmut Kaiser
 //  Copyright (c) 2014 Patricia Grubel
+//  Copyright (c) 2017 Adrian Serio
 //
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -121,12 +122,22 @@ struct backup {
    : bin(np),
      file_name_(file_name),
      file_archive(file_name)
-  {}
+  {
+//    if (file_archive.data.is_open()) {hpx::cout<<"I am open at construction!"<<std::endl;}
+  }
+  backup(const backup & old)
+   : bin(old.bin),
+     file_name_(old.file_name_),
+     file_archive(old.file_name_)
+  { 
+//    hpx::cout<<"I made a copy!"<<std::endl; 
+  }
   ~backup() {
     file_archive.data.close();
+//    hpx::cout<<"I am death!"<<std::endl;
   }
 
-  void save(partition_data const& status, std::size_t timestep, std::size_t index) {
+  void save(partition_data const& status, std::size_t index) {
     store(bin[index], status);
   }
 
@@ -140,22 +151,6 @@ struct backup {
   }
 };
 
-void save(partition_data const& status, std::string file_name, std::size_t timestep, std::size_t index) {
-  file_name=file_name+std::to_string(timestep)+"_part"+std::to_string(index);
-  Checkpoint<hpxio_file> file_archive(file_name);
-  store(file_archive, status);
-  
-/*  //Check to see if store is working
-  Checkpoint<> do_i_work;
-  partition_data test_part(status.size());
-  resurrect(file_archive, test_part);
-  for(int y=0; y < status.size(); y++) {
-    if (status[y]==test_part[y]) { std::cout<<"I WORK!"<<std::endl; }
-  }
-*/  
-  file_archive.data.write();
-  file_archive.data.close();
-}
 ///////////////////////////////////////////////////////////////////////////////
 struct stepper
 {
@@ -192,13 +187,23 @@ struct stepper
     // do all the work on 'np' partitions, 'nx' data points each, for 'nt'
     // time steps, limit depth of dependency tree to 'nd'
     hpx::future<space> do_work(std::size_t np, std::size_t nx, std::size_t nt,
-        std::uint64_t nd)
+        std::uint64_t nd, std::uint64_t cp)
     {
         using hpx::dataflow;
         using hpx::util::unwrapped;
-
+        
+        // Set up Checkpointing
+        int num_c=nt/cp;        //Number of checkpoints to be made
+        hpx::cout<<"Number of Checkpoints to be made: "<<num_c<<std::endl;
         std::string file_name="1d.archive";
-        backup container(file_name, np);
+        std::vector<std::string> v_file_names(num_c, file_name);
+        std::vector<backup> container;
+        // Initialize checkpoint file names
+        for(int i=0; i<num_c ; i++) {
+          v_file_names[i]=v_file_names[i]+"_"+std::to_string((i+1)*cp);
+          container.push_back(backup(v_file_names[i], np));
+        }
+        // Container to wait on all held futures
         std::vector<hpx::future<void>> backup_complete;
 
         // U[t][i] is the state of position i at time t.
@@ -236,11 +241,10 @@ struct stepper
                     );
                 
                 //Checkpoint
-                if (t % 44 == 0 && t != 0 ) {
-                 next[i]=next[i].then( [&container,nt,i](partition && p) {
+                if (t % cp == 0 && t != 0 ) {
+                 next[i]=next[i].then( [&container,i,t,cp](partition && p) {
                                         partition_data value(p.get());
-        //                                save(value, file_name, nt, i);
-                                        container.save(value, nt, i);
+                                        container[(t/cp)-1].save(value, i);
                                         partition f_value=
                                                hpx::make_ready_future(value);
                                         return f_value;
@@ -251,10 +255,9 @@ struct stepper
             }
             
             //Print Checkpoint
-            if (t%44==0 && t!=0) {
-  //           hpx::future<void> f_print = hpx::when_all(next).then(
+            if (t%cp==0 && t!=0) {
              hpx::future<void> f_print = hpx::when_all(next).then(
-               [&container](hpx::future<space>&& f_s){ container.write(); }                                     
+               [&container,t,cp](hpx::future<space>&& f_s){ container[(t/cp)-1].write(); }                                     
                                                     );
              backup_complete.push_back(std::move(f_print));
             }
@@ -291,6 +294,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::uint64_t nx = vm["nx"].as<std::uint64_t>();   // Number of grid points.
     std::uint64_t nt = vm["nt"].as<std::uint64_t>();   // Number of steps.
     std::uint64_t nd = vm["nd"].as<std::uint64_t>();   // Max depth of dep tree.
+    std::uint64_t cp = vm["cp"].as<std::uint64_t>(); // Num. steps to checkpoint
 
     if (vm.count("no-header"))
         header = false;
@@ -305,7 +309,7 @@ int hpx_main(boost::program_options::variables_map& vm)
     std::uint64_t t = hpx::util::high_resolution_clock::now();
 
     // Execute nt time steps on nx grid points and print the final solution.
-    hpx::future<stepper::space> result = step.do_work(np, nx, nt, nd);
+    hpx::future<stepper::space> result = step.do_work(np, nx, nt, nd, cp);
 
     stepper::space solution = result.get();
     hpx::wait_all(solution);
@@ -348,6 +352,8 @@ int main(int argc, char* argv[])
          "Timestep unit (default: 1.0[s])")
         ("dx", value<double>(&dx)->default_value(1.0),
          "Local x dimension")
+        ("cp", value<std::uint64_t>()->default_value(44),
+          "Number of steps to checkpoint")
         ( "no-header", "do not print out the csv header row")
     ;
 
