@@ -146,8 +146,14 @@ struct backup {
     file_archive.data.write();
   }
   
-  void revive(std::vector<partition_data>& state, std::size_t index) {
-    resurrect(bin[index], state);
+  void revive(std::vector<std::vector<hpx::shared_future<partition_data>>>& U, 
+              std::size_t nx) {
+    resurrect(file_archive, bin); 
+    for (int i=0; i<U[0].size(); i++) {
+      partition_data temp(nx, double(i));
+      resurrect(bin[i], temp);
+      U[0][i] = hpx::make_ready_future(temp);
+    }
   }
 };
 
@@ -282,6 +288,25 @@ struct stepper
         // Wait on Checkpoint Printing
         hpx::wait_all(backup_complete);
 
+        //Test  
+        std::vector<space> Z(2);  //Create a new test vector and resize it
+        for (space& y: Z) {
+            y.resize(np);
+        }
+        
+        std::size_t c=0;
+        auto range2=boost::irange(c, np);
+        //Fill the vector will futures
+        hpx::parallel::for_each(par, boost::begin(range2), boost::end(range2),
+            [&Z, nx](std::size_t i)
+              {
+                Z[0][i]=hpx::make_ready_future(partition_data(nx, double(i)));
+              }
+        );
+        
+        backup test(v_file_names[0], np);
+        test.revive(Z,nx);
+                
         // Return the solution at time-step 'nt'.
         return hpx::when_all(U[nt % 2]);
     }
