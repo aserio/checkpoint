@@ -134,12 +134,12 @@ struct backup {
   {
 //    if (file_archive.data.is_open()) {hpx::cout<<"I am open at construction!"<<std::endl;}
   }
-  backup(const backup & old)
+  backup(backup && old)
    : bin(old.bin),
      file_name_(old.file_name_),
      file_archive(old.file_name_)
   { 
-//    hpx::cout<<"I made a copy!"<<std::endl; 
+//    hpx::cout<<"I made a move!"<<std::endl; 
   }
   ~backup() {
     file_archive.data.close();
@@ -263,8 +263,9 @@ struct stepper
             }
         );
         
+        //Initialize from backup
         if (rsf != "") {
-         backup restart(v_file_names[0],np);
+         backup restart(rsf,np);
          restart.revive(U,nx);
         }
         
@@ -304,7 +305,7 @@ struct stepper
                 }
             }
             
-            //Print Checkpoint
+            //Print Checkpoint to file
             if (t%cp==0 && t!=0) {
              hpx::future<void> f_print = hpx::when_all(next).then(
                [&container,t,cp](hpx::future<space>&& f_s){ 
@@ -340,27 +341,19 @@ struct stepper
         // Wait on Checkpoint Printing
         hpx::wait_all(backup_complete);
 
-        //Test  
-        std::vector<space> Z(2);  //Create a new test vector and resize it
+        //Begin Test  
+        //Create a new test vector and resize it
+        std::vector<space> Z(2);  
         for (space& y: Z) {
             y.resize(np);
         }
-        
-        std::size_t c=0;
-        auto range2=boost::irange(c, np);
-        //Fill the vector will futures
-        hpx::parallel::for_each(par, boost::begin(range2), boost::end(range2),
-            [&Z, nx](std::size_t i)
-              {
-                Z[0][i]=hpx::make_ready_future(partition_data(nx, double(i)));
-              }
-        );
-        
+
         backup test(v_file_names[0], np);
         std::cout<<std::endl;
         std::cout<<"Revive Check:"<<std::endl;
         test.revive(Z,nx);
         std::cout<<std::endl;
+        //End Test
  
         // Return the solution at time-step 'nt'.
         return hpx::when_all(U[nt % 2]);
