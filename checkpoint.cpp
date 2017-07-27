@@ -27,8 +27,8 @@ int main() {
  std::vector<char> vec(str.begin(),str.end());
  std::vector<char> vec2;
 // std::vector<char> archive;
- Checkpoint<> archive;
- Checkpoint<> archive2;
+ checkpoint<> archive;
+ checkpoint<> archive2;
  
  //Test 1
  hpx::cout<<"Test 1:"<<std::endl;
@@ -83,7 +83,7 @@ int main() {
  //Test 3
  hpx::cout<<"Test 3:"<<std::endl;
  
- Checkpoint<> archive3;
+ checkpoint<> archive3;
  store(archive3, vec, integer);
  resurrect(archive3, vec2, integer2);
  
@@ -101,7 +101,7 @@ int main() {
  omg.write();
 
  //Test 5
- Checkpoint<hpxio_file> archive4("test4.archive");
+ checkpoint<hpxio_file> archive4("test4.archive");
  std::vector<int> test_vec;
  for (int c=0; c<101; c++) {
   test_vec.push_back(c);

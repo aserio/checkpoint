@@ -123,9 +123,9 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 // Checkpoint Function
 
 struct backup {
-  std::vector<Checkpoint<>> bin;
+  std::vector<checkpoint<>> bin;
   std::string file_name_;
-  Checkpoint<hpxio_file> file_archive;
+  checkpoint<hpxio_file> file_archive;
 
   backup(std::string file_name, size_t np)
    : bin(np),
@@ -236,7 +236,7 @@ struct stepper
         
         // Set up Checkpointing
         int num_c=nt/cp;        //Number of checkpoints to be made
-        hpx::cout<<"Number of Checkpoints to be made: "<<num_c<<std::endl;
+        hpx::cout<<"Number of checkpoints to be made: "<<num_c<<std::endl;
         std::vector<std::string> v_file_names(num_c, fn);
         std::vector<backup> container;
         // Initialize checkpoint file names

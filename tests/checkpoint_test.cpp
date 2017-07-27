@@ -31,8 +31,8 @@ int main() {
  std::string str2;
  std::vector<char> vec(str.begin(),str.end());
  std::vector<char> vec2;
- Checkpoint<> archive;
- Checkpoint<> archive2;
+ checkpoint<> archive;
+ checkpoint<> archive2;
  
  //Test 1 - Store arbitrary variables
 /*
@@ -88,10 +88,10 @@ int main() {
   pass_counter++;
  }
 
- //Test 3 - Test Checkpoint<hpxio_file>
+ //Test 3 - Test checkpoint<hpxio_file>
  //hpx::cout<<"Test 3:"<<std::endl;
  
- Checkpoint<hpxio_file> archive3("archive3.archive");
+ checkpoint<hpxio_file> archive3("archive3.archive");
  std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
  std::vector<char> vec_char2;
  std::vector<int>  vec_int={1,2,3,4,5};

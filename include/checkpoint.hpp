@@ -9,9 +9,9 @@
 // byte stream. Resurrect converts the byte stream back into the 
 // object.
 // 
-// Store takes a type 'Checkpoint' and any number of objects
+// Store takes a type 'checkpoint' and any number of objects
 // which you wish to store. Users can create a custom type to 
-// pass as a template argument to a Checkpoint object. The 
+// pass as a template argument to a checkpoint object. The 
 // user must take care to ensure that the created type exposes
 // the proper traits as required by serialization.
 //
@@ -21,18 +21,13 @@
 //
 // Checkpoint is the container object which must be passed to store.
 // Checkpoint takes a user supplied type to store the data in. 
-// By default Checkpoint uses std::vector<char>.
+// By default checkpoint uses std::vector<char>.
 // 
 // To-Do:
-//    - Get Checkpoint to expose traits (ie. can_write)
-//    - Create a type Checkpoint to manage data stream
 //    - Wrap serialized data in a component?
 //       -> Return a GID
 //    - Pass a component to store
-//    - Add traits
-//       -> Write trait
 //
-// TRYING TO GET A COMPONENT TO TAKE TEMPLATES D:  D:  D:
 
 #if !defined(CHECKPOINT_HPP_07262017)
 #define CHECKPOINT_HPP_07262017
@@ -50,9 +45,9 @@ struct can_write
 
 //Checkpoint Object
 template<typename T = std::vector<char>>
-struct Checkpoint {
+struct checkpoint {
   template <typename ... Ts>
-  Checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
+  checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
   T data;
   
   //Serialization Definition
@@ -71,9 +66,9 @@ struct Checkpoint {
 
 //Store function
 template <typename C, typename ...T>
-void store (Checkpoint<C>& c, T&& ...t) {
+void store (checkpoint<C>& c, T&& ...t) {
  {
-  //Create serialization archive from Checkpoint data member
+  //Create serialization archive from checkpoint data member
   hpx::serialization::output_archive ar(c.data);
   
   //Serialize data
@@ -84,7 +79,7 @@ void store (Checkpoint<C>& c, T&& ...t) {
 
 //Resurrect Function
 template <typename C, typename ...T>
-void resurrect (Checkpoint<C> const& c, T& ...t) {
+void resurrect (checkpoint<C> const& c, T& ...t) {
  {
   //Create seriaalization archive
   hpx::serialization::input_archive ar(c.data, 

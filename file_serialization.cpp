@@ -149,11 +149,11 @@ int main(int argc, char* argv[])
     }
         
     {
- //       Checkpoint<> check;
+ //       checkpoint<> check;
  //       file_wrapper buffer2("buffer2_test.archive",
 //            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-//        Checkpoint<file_wrapper> check(buffer2);
-        Checkpoint<file_wrapper> check("buffer2_test.archive",
+//        checkpoint<file_wrapper> check(buffer2);
+        checkpoint<file_wrapper> check("buffer2_test.archive",
             std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
         for(double c = -100.0; c < +100.0; c += 1.3)
         {
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
     }
 
     {
-        Checkpoint<file_wrapper> check2("buffer2_test.archive",
+        checkpoint<file_wrapper> check2("buffer2_test.archive",
             std::ios_base::in | std::ios_base::binary);
         std::vector<double> is2;
         resurrect(check2, is2);
