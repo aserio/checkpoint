@@ -9,15 +9,18 @@
 // Additionally the File class can make a new file from the old one.
 //
 // My next steps are to:
-//    Fix hang!
-//    create an = overload
-//    Create a checkpoint?
-
+//          - Support a can_write trait
+//
+#if !defined(HPXIO_FILE_HPP)
+#define HPXIO_FILE_HPP 
 #include <hpx/hpx.hpp>
 #include <hpx/include/iostreams.hpp>
 
 #include <hpxio/server/local_file.hpp>
 #include <hpxio/base_file.hpp>
+
+#include <checkpoint.hpp>
+
 
 class hpxio_file {
  public:
@@ -273,3 +276,12 @@ namespace hpx { namespace traits
   };
  }
 }
+
+//Checkpoint Traits
+template<>
+struct can_write<hpxio_file>
+  : std::true_type
+{};
+
+#endif
+

@@ -24,6 +24,7 @@
 // By default Checkpoint uses std::vector<char>.
 // 
 // To-Do:
+//    - Get Checkpoint to expose traits (ie. can_write)
 //    - Create a type Checkpoint to manage data stream
 //    - Wrap serialized data in a component?
 //       -> Return a GID
@@ -33,22 +34,39 @@
 //
 // TRYING TO GET A COMPONENT TO TAKE TEMPLATES D:  D:  D:
 
+#if !defined(CHECKPOINT_HPP_07262017)
+#define CHECKPOINT_HPP_07262017
+
+#include <type_traits>
+
 #include <hpx/include/serialization.hpp>
 #include <hpx/include/components.hpp>
+
+//Checkpoint Traits
+template <typename T>
+struct can_write
+  : std::false_type
+{}; // Create an template specialization to expose a write function
 
 //Checkpoint Object
 template<typename T = std::vector<char>>
 struct Checkpoint {
- template <typename ... Ts>
- Checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
- T data;
-
- //Serialization Definition
- friend class hpx::serialization::access;
- template<typename Volume>
- void serialize(Volume& vol, const unsigned int version) {
-  vol & data;
- }
+  template <typename ... Ts>
+  Checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
+  T data;
+  
+  //Serialization Definition
+  friend class hpx::serialization::access;
+  template<typename Volume>
+  void serialize(Volume& vol, const unsigned int version) {
+   vol & data;
+  };
+  
+  void write() {
+    static_assert(can_write<T>::value,
+      "No write function (or can_write trait) is implemented for this type.");
+      data.write();
+  }
 };
 
 //Store function
@@ -77,6 +95,7 @@ void resurrect (Checkpoint<C> const& c, T& ...t) {
    (ar >> t, 0)...};        //Takes advantage of the comma operator
  } 
 }
+
 
 /*
 /////////// Checkpoint Component ///////////////
@@ -130,3 +149,6 @@ struct checkpoint_client
 //HPX_REGISTER_ACTION(checkpoint::hi_action, test);
 ///////////////////////////////////////////////////////////
 */
+
+#endif
+

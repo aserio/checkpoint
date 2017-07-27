@@ -54,7 +54,7 @@ int main() {
  
  store(archive, character, integer, flt, boolean, str, vec);
  resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
- 
+
  //Print out resurected variables 
 /*
  hpx::cout<<"Resurrected Variables"<<std::endl
