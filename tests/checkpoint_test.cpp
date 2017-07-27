@@ -3,7 +3,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// This example tests the store and resurrect functions for their ability to 
+// This example tests the save_checkpoint and restore_checkpoint functions for their ability to 
 // checkpoint and application.
 // 
 
@@ -52,8 +52,8 @@ int main() {
  }
 */
  
- store(archive, character, integer, flt, boolean, str, vec);
- resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
+ save_checkpoint(archive, character, integer, flt, boolean, str, vec);
+ restore_checkpoint(archive, character2, integer2, flt2, boolean2, str2, vec2);
 
  //Print out resurected variables 
 /*
@@ -80,7 +80,7 @@ int main() {
  //hpx::cout<<"Test 2:"<<std::endl;
  
  archive2=archive;
- resurrect(archive, character2, integer2, flt2, boolean2, str2, vec2);
+ restore_checkpoint(archive, character2, integer2, flt2, boolean2, str2, vec2);
  
  if (character == character2 && integer == integer2 && flt == flt2
       && boolean == boolean2 && str == str2 
@@ -96,8 +96,8 @@ int main() {
  std::vector<char> vec_char2;
  std::vector<int>  vec_int={1,2,3,4,5};
  std::vector<int>  vec_int2;
- store(archive3, vec_char, vec_int);
- resurrect(archive3, vec_char2, vec_int2);
+ save_checkpoint(archive3, vec_char, vec_int);
+ restore_checkpoint(archive3, vec_char2, vec_int2);
  
  if (std::equal(vec_char.begin(), vec_char.end(), vec_char2.begin()) 
       && std::equal(vec_int.begin(), vec_int.end(), vec_int2.begin())){

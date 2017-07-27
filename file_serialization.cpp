@@ -159,14 +159,14 @@ int main(int argc, char* argv[])
         {
             os2.push_back(c);
         }
-        store(check, os2);    
+        save_checkpoint(check, os2);    
     }
 
     {
         checkpoint<file_wrapper> check2("buffer2_test.archive",
             std::ios_base::in | std::ios_base::binary);
         std::vector<double> is2;
-        resurrect(check2, is2);
+        restore_checkpoint(check2, is2);
         for(std::size_t i = 0; i < os2.size(); ++i)
         {
             if (os2[i] != is2[i])

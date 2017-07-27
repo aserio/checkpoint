@@ -3,7 +3,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// This header defines the store and resurrect functions. These functions
+// This header defines the save_checkpoint and restore_checkpoint functions. These functions
 // are designed to help HPX application developers checkpoint thier
 // applications. Store serializes an object and saves it as a
 // byte stream. Resurrect converts the byte stream back into the 
@@ -19,14 +19,14 @@
 // which to store the objects in the byte stream (in the same order
 // as they were placed in).
 //
-// Checkpoint is the container object which must be passed to store.
+// Checkpoint is the container object which must be passed to save_checkpoint.
 // Checkpoint takes a user supplied type to store the data in. 
 // By default checkpoint uses std::vector<char>.
 // 
 // To-Do:
 //    - Wrap serialized data in a component?
 //       -> Return a GID
-//    - Pass a component to store
+//    - Pass a component to save_checkpoint
 //
 
 #if !defined(CHECKPOINT_HPP_07262017)
@@ -62,11 +62,12 @@ struct checkpoint {
       "No write function (or can_write trait) is implemented for this type.");
       data.write();
   }
+
 };
 
 //Store function
 template <typename C, typename ...T>
-void store (checkpoint<C>& c, T&& ...t) {
+void save_checkpoint (checkpoint<C>& c, T&& ...t) {
  {
   //Create serialization archive from checkpoint data member
   hpx::serialization::output_archive ar(c.data);
@@ -79,7 +80,7 @@ void store (checkpoint<C>& c, T&& ...t) {
 
 //Resurrect Function
 template <typename C, typename ...T>
-void resurrect (checkpoint<C> const& c, T& ...t) {
+void restore_checkpoint (checkpoint<C> const& c, T& ...t) {
  {
   //Create seriaalization archive
   hpx::serialization::input_archive ar(c.data, 

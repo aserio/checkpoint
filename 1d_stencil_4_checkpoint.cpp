@@ -147,20 +147,20 @@ struct backup {
   }
 
   void save(partition_data const& status, std::size_t index) {
-    store(bin[index], status);
+    save_checkpoint(bin[index], status);
   }
 
   void write() {
-    store(file_archive, bin);
+    save_checkpoint(file_archive, bin);
     file_archive.data.write();
   }
   
   void revive(std::vector<std::vector<hpx::shared_future<partition_data>>>& U, 
               std::size_t nx) {
-    resurrect(file_archive, bin); 
+    restore_checkpoint(file_archive, bin); 
     for (int i=0; i<U[0].size(); i++) {
       partition_data temp(nx, double(i));
-      resurrect(bin[i], temp);
+      restore_checkpoint(bin[i], temp);
       //Check
           for (int e=0; e<temp.size(); e++) {
             std::cout<<temp[e]<<", ";
