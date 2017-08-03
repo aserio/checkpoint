@@ -101,21 +101,33 @@ int main() {
  omg.write();
 
  //Test 5
- checkpoint<hpxio_file> archive4("test4.archive");
+// checkpoint<hpxio_file> archive4("test4.archive");
+ checkpoint<>archive4;
  std::vector<int> test_vec;
  for (int c=0; c<101; c++) {
   test_vec.push_back(c);
  }
  save_checkpoint(archive4, test_vec);
- archive4.data.write();
+// archive4.data.write();
  
  //Test 6    
- hpx::cout<<"Test 6"<<std::endl;
+ std::cout<<"Test 6"<<std::endl;
  std::vector<int> test_vec2;
  restore_checkpoint(archive4, test_vec2);
  if (std::equal(test_vec.begin(), test_vec.end(), 
           test_vec2.begin())){
-  hpx::cout<<"I work!"<<std::endl;
+  std::cout<<"I work!"<<std::endl;
+ }
+
+ //Test 7
+ checkpoint<> archive5(archive2);
+ save_checkpoint_future(archive5, test_vec2);
+// archive5=archive2;
+  
+ checkpoint<> archive6;
+ archive6=std::move(archive5);
+ if (archive6.data == archive5.data) {
+   std::cout<<"Example 7: I work!"<<std::endl;
  }
  
  return 0;

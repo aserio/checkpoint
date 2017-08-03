@@ -135,7 +135,7 @@ struct backup {
 //    if (file_archive.data.is_open()) {hpx::cout<<"I am open at construction!"<<std::endl;}
   }
   backup(backup && old)
-   : bin(old.bin),
+   : bin(std::move(old.bin)),
      file_name_(old.file_name_),
      file_archive(old.file_name_)
   { 

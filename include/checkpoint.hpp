@@ -46,8 +46,26 @@ struct can_write
 //Checkpoint Object
 template<typename T = std::vector<char>>
 struct checkpoint {
-  template <typename ... Ts>
-  checkpoint(Ts &&... ts) : data(std::forward<Ts>(ts)...) {} 
+  checkpoint() {}
+  checkpoint(checkpoint const & c) : data(c.data) {} 
+  checkpoint(checkpoint && c) : data(std::move(c.data)) {} 
+  ~checkpoint(){}
+
+  //Constructors
+  // the enable if is needed to force the compiler to use the move constructor 
+  // if passing a type 'checkpoint'
+  template <typename T_, typename U = 
+    typename std::enable_if<
+      !std::is_same<checkpoint<T>, typename std::decay<T_>::type>::value>::type>
+  explicit checkpoint(T_ && t)
+   : data(std::forward<T_>(t)) 
+   {} //Pass args to data structure constr. if first arg is not type checkpoint
+
+  template <typename T1, typename T2, typename ... Ts>
+  explicit checkpoint(T1 && t1, T2 && t2, Ts &&... ts) 
+   : data(std::forward<T1>(t1), std::forward<T2>(t2), std::forward<Ts>(ts)...)
+  {} //Pass args to data structure constuctor
+
   T data;
   
   //Serialization Definition
@@ -56,8 +74,18 @@ struct checkpoint {
   void serialize(Volume& vol, const unsigned int version) {
    vol & data;
   };
-  
-  void write() {
+ 
+  checkpoint& operator= (checkpoint const & c) 
+  {
+    data=c.data;
+  }
+  checkpoint& operator= (checkpoint && c) 
+  {
+    data=std::move(c.data);
+  }
+   
+  void write() 
+  {
     static_assert(can_write<T>::value,
       "No write function (or can_write trait) is implemented for this type.");
       data.write();
@@ -76,6 +104,32 @@ void save_checkpoint (checkpoint<C>& c, T&& ...t) {
   int const sequencer[]= {  //Trick to expand the variable pack
    (ar << t, 0)...};          //Takes advantage of the comma operator
  }
+}
+
+//Store function - With futures! 
+template <typename C, typename ...T>
+void save_checkpoint_future (checkpoint<C>& c, T&& ...t) {
+  {
+    hpx::future<int> f=hpx::make_ready_future(5);
+    hpx::future<void> f2 = f.then([](hpx::future<int> i){
+                    std::cout<<"I am functioning!"<<std::endl;
+                  });
+    f2.get();
+/*    hpx::future<checkpoint<>> f =  hpx::dataflow(
+                 hpx::launch::async, 
+                 [](checkpoint<C>& c, T&& ...t){
+                    //Create serialization archive from checkpoint data member
+                    hpx::serialization::output_archive ar(c.data);
+                    //Serialize data
+                    int const sequencer[]= {  //Trick to expand the variable pack
+                    (ar << t, 0)...}; }, //Takes advantage of the comma operator
+                    std::cout<<"I am functioning!"<<std::endl; 
+                    return hpx::make_ready_future(c);
+                 },
+                 std::forward<T>(t)...);
+    f.get();
+*/
+  }
 }
 
 //Resurrect Function
