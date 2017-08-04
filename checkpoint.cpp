@@ -92,9 +92,8 @@ int main() {
  }
 
  //Test 4
- hpx::cout<<"Test 4"<<std::endl;
+ hpx::cout<<"Test 4:"<<std::endl;
  hpxio_file omg("omg.txt");
-// std::vector<char> char_buff("OMG! This is a test!");
  std::vector<char> char_buff={'O', 'M', 'G', '!', ' ','T', 'h', 'i', 's', ' ', 'i', 's', ' ', 'a', ' ', 't', 'e', 's', 't', '!'};
  omg.data=char_buff;
  omg.print(); 
@@ -111,7 +110,7 @@ int main() {
 // archive4.data.write();
  
  //Test 6    
- std::cout<<"Test 6"<<std::endl;
+ std::cout<<"Test 6:"<<std::endl;
  std::vector<int> test_vec2;
  restore_checkpoint(archive4, test_vec2);
  if (std::equal(test_vec.begin(), test_vec.end(), 
@@ -120,16 +119,25 @@ int main() {
  }
 
  //Test 7
+ std::cout<<"Test 7:"<<std::endl;
  checkpoint<> archive5(archive2);
- hpx::future<std::vector<int>>test_vec2_future=hpx::make_ready_future(test_vec2);
- hpx::future<void> f_check=save_checkpoint_future(std::move(archive5), test_vec2_future);
- f_check.get();
-// archive5=archive2;
-  
+ hpx::future<std::vector<int>>test_vec2_future=
+                                              hpx::make_ready_future(test_vec2);
+ hpx::future<checkpoint<>> f_check=
+                  save_checkpoint_future(std::move(archive5), test_vec2_future);
+ hpx::future<std::vector<int>>test_vec3_future;
+ restore_checkpoint(f_check.get(),test_vec3_future); 
+ if (test_vec2 == test_vec3_future.get()) {
+   std::cout<<"I work!"<<std::endl;
+ }
+
+ //Test 8
+ //test the operator= constructor
+ std::cout<<"Test 8:"<<std::endl;
  checkpoint<> archive6;
  archive6=std::move(archive5);
  if (archive6.data == archive5.data) {
-   std::cout<<"Example 7: I work!"<<std::endl;
+   std::cout<<"I work!"<<std::endl;
  }
  
  return 0;

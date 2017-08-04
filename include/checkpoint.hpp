@@ -110,21 +110,23 @@ void save_checkpoint (checkpoint<C>& c, T&& ...t) {
 struct save_funct_obj
 {
   template <typename C, typename ...Ts>
-  void operator() (C && c, Ts && ...ts)const
+  C operator() (C && c, Ts && ...ts)const
   {
-    std::cout<<"I am functioning!"<<std::endl;
     //Create serialization archive from checkpoint data member
     hpx::serialization::output_archive ar(c.data);
     //Serialize data
     int const sequencer[]= 
     {  //Trick to expand the variable pack
       (ar << ts, 0)...};  //Takes advantage of the comma operator 
+    return c;
   }
 };
 
 //Store function - With futures! 
 template <typename C_type, typename ...Ts>
-hpx::future<void> save_checkpoint_future (checkpoint<C_type> && c, Ts && ...ts) {
+hpx::future<checkpoint<C_type>> save_checkpoint_future (checkpoint<C_type> && c, 
+                                                       Ts && ...ts) 
+{
   {
     return hpx::dataflow(
       save_funct_obj(),
