@@ -121,7 +121,9 @@ int main() {
 
  //Test 7
  checkpoint<> archive5(archive2);
- save_checkpoint_future(archive5, test_vec2);
+ hpx::future<std::vector<int>>test_vec2_future=hpx::make_ready_future(test_vec2);
+ hpx::future<void> f_check=save_checkpoint_future(std::move(archive5), test_vec2_future);
+ f_check.get();
 // archive5=archive2;
   
  checkpoint<> archive6;

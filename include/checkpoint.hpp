@@ -106,29 +106,30 @@ void save_checkpoint (checkpoint<C>& c, T&& ...t) {
  }
 }
 
-//Store function - With futures! 
-template <typename C, typename ...T>
-void save_checkpoint_future (checkpoint<C>& c, T&& ...t) {
+//Function object for save_checkpoint
+struct save_funct_obj
+{
+  template <typename C, typename ...Ts>
+  void operator() (C && c, Ts && ...ts)const
   {
-    hpx::future<int> f=hpx::make_ready_future(5);
-    hpx::future<void> f2 = f.then([](hpx::future<int> i){
-                    std::cout<<"I am functioning!"<<std::endl;
-                  });
-    f2.get();
-/*    hpx::future<checkpoint<>> f =  hpx::dataflow(
-                 hpx::launch::async, 
-                 [](checkpoint<C>& c, T&& ...t){
-                    //Create serialization archive from checkpoint data member
-                    hpx::serialization::output_archive ar(c.data);
-                    //Serialize data
-                    int const sequencer[]= {  //Trick to expand the variable pack
-                    (ar << t, 0)...}; }, //Takes advantage of the comma operator
-                    std::cout<<"I am functioning!"<<std::endl; 
-                    return hpx::make_ready_future(c);
-                 },
-                 std::forward<T>(t)...);
-    f.get();
-*/
+    std::cout<<"I am functioning!"<<std::endl;
+    //Create serialization archive from checkpoint data member
+    hpx::serialization::output_archive ar(c.data);
+    //Serialize data
+    int const sequencer[]= 
+    {  //Trick to expand the variable pack
+      (ar << ts, 0)...};  //Takes advantage of the comma operator 
+  }
+};
+
+//Store function - With futures! 
+template <typename C_type, typename ...Ts>
+hpx::future<void> save_checkpoint_future (checkpoint<C_type> && c, Ts && ...ts) {
+  {
+    return hpx::dataflow(
+      save_funct_obj(),
+      std::move(c),
+      std::forward<Ts>(ts)...);
   }
 }
 
