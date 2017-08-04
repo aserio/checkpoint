@@ -140,5 +140,38 @@ int main() {
    std::cout<<"I work!"<<std::endl;
  }
  
+ //Test 9
+ //test save_checkpoint_future semantics
+ std::cout<<"Test 9:"<<std::endl;
+ int test_int=8;
+ int test_int2;
+ int variable=10;
+ hpx::future<int> test_f_int=hpx::make_ready_future(variable); 
+ hpx::future<int> test_f_int2; 
+ hpx::future<checkpoint<hpxio_file>> f_chk_file = save_checkpoint_future(
+                 checkpoint<hpxio_file>("test_file_9.txt"),
+                 test_int,
+                 test_f_int
+                 );
+ restore_checkpoint(f_chk_file.get(),test_int2, test_f_int2);
+ if (test_int == test_int2 && variable == test_f_int2.get()) {
+   std::cout<<"I work!"<<std::endl;
+ }
+
+ //Test 10
+ //more tests with hpxio_file
+ std::cout<<"Test 10:"<<std::endl;
+ double test_double =2.25;
+ double test_double2;
+ checkpoint<hpxio_file> test_file_10("test_file_10.txt");
+ hpx::shared_future<checkpoint<hpxio_file>> f_test_file_10 = save_checkpoint_future(
+            std::move(test_file_10),
+            test_double
+            );
+ std::cout<<f_test_file_10.get().data.size_data()<<std::endl;
+// f_test_file_10.get().data.write(); Get this to work
+ restore_checkpoint(f_test_file_10.get(), test_double2);
+ std::cout<<"Double: "<<test_double<<"="<<test_double2<<std::endl;
+
  return 0;
 }
