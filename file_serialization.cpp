@@ -12,8 +12,8 @@
 
 #include <cstddef>
 #include <cstring>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -23,9 +23,10 @@
 struct file_wrapper
 {
     file_wrapper(std::string const& name, std::ios_base::openmode mode)
-      : name_(name), mode_(mode)
+      : name_(name)
+      , mode_(mode)
     {
-        stream_.open(name_.c_str(),mode);
+        stream_.open(name_.c_str(), mode);
         if (!stream_.is_open())
             throw std::runtime_error("Couldn't open file: " + name);
 
@@ -66,15 +67,15 @@ struct file_wrapper
     {
         data_.resize(data_.size() + count);
     }
-    
-    char& operator[](int i) 
+
+    char& operator[](int i)
     {
-        return data_[i]; 
+        return data_[i];
     }
 
-    const char& operator[](int i)const 
+    const char& operator[](int i) const
     {
-        return data_[i]; 
+        return data_[i];
     }
 
 private:
@@ -84,11 +85,11 @@ private:
     std::ios_base::openmode mode_;
 };
 
-namespace hpx { namespace traits
-{
+namespace hpx {
+namespace traits {
     template <>
     struct serialization_access_data<file_wrapper>
-      : default_serialization_access_data<file_wrapper>
+        : default_serialization_access_data<file_wrapper>
     {
         static std::size_t size(file_wrapper const& cont)
         {
@@ -113,7 +114,8 @@ namespace hpx { namespace traits
             cont.read(address, count, current);
         }
     };
-}}
+}
+}
 
 int main(int argc, char* argv[])
 {
@@ -124,7 +126,7 @@ int main(int argc, char* argv[])
         file_wrapper buffer("file_serialization_test.archive",
             std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
         hpx::serialization::output_archive oarchive(buffer);
-        for(double c = -100.0; c < +100.0; c += 1.3)
+        for (double c = -100.0; c < +100.0; c += 1.3)
         {
             os.push_back(c);
         }
@@ -138,47 +140,44 @@ int main(int argc, char* argv[])
         hpx::serialization::input_archive iarchive(buffer, size);
         std::vector<double> is;
         iarchive >> is;
-        for(std::size_t i = 0; i < os.size(); ++i)
+        for (std::size_t i = 0; i < os.size(); ++i)
         {
             if (os[i] != is[i])
             {
-                std::cerr << "Mismatch for element " << i << ":"
-                          << os[i] << " != " << is[i] << "\n";
+                std::cerr << "Mismatch for element " << i << ":" << os[i]
+                          << " != " << is[i] << "\n";
             }
         }
-    }
-        
-    {
- //       checkpoint<> check;
- //       file_wrapper buffer2("buffer2_test.archive",
-//            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-//        checkpoint<file_wrapper> check(buffer2);
-        checkpoint<file_wrapper> check("buffer2_test.archive",
-            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-        for(double c = -100.0; c < +100.0; c += 1.3)
-        {
-            os2.push_back(c);
-        }
-        save_checkpoint(check, os2);    
     }
 
     {
-        checkpoint<file_wrapper> check2("buffer2_test.archive",
-            std::ios_base::in | std::ios_base::binary);
+        //       checkpoint<> check;
+        //       file_wrapper buffer2("buffer2_test.archive",
+        //            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+        //        checkpoint<file_wrapper> check(buffer2);
+        checkpoint<file_wrapper> check("buffer2_test.archive",
+            std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+        for (double c = -100.0; c < +100.0; c += 1.3)
+        {
+            os2.push_back(c);
+        }
+        save_checkpoint(check, os2);
+    }
+
+    {
+        checkpoint<file_wrapper> check2(
+            "buffer2_test.archive", std::ios_base::in | std::ios_base::binary);
         std::vector<double> is2;
         restore_checkpoint(check2, is2);
-        for(std::size_t i = 0; i < os2.size(); ++i)
+        for (std::size_t i = 0; i < os2.size(); ++i)
         {
             if (os2[i] != is2[i])
             {
-                std::cerr << "Mismatch for element " << i << ":"
-                          << os2[i] << " != " << is2[i] << "\n";
+                std::cerr << "Mismatch for element " << i << ":" << os2[i]
+                          << " != " << is2[i] << "\n";
             }
         }
-        
     }
 
     return 0;
 }
-
-
