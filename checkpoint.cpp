@@ -164,7 +164,7 @@ int main()
     hpx::future<int> test_f_int = hpx::make_ready_future(variable);
     hpx::future<int> test_f_int2;
     hpx::future<checkpoint<hpxio_file>> f_chk_file = save_checkpoint_future(
-        checkpoint<hpxio_file>("test_file_9.txt"), test_int, test_f_int);
+        std::move(checkpoint<hpxio_file>("test_file_9.txt")), test_int, test_f_int);
     restore_checkpoint(f_chk_file.get(), test_int2, test_f_int2);
     if (test_int == test_int2 && variable == test_f_int2.get())
     {
@@ -180,7 +180,8 @@ int main()
     hpx::shared_future<checkpoint<hpxio_file>> f_test_file_10 =
         save_checkpoint_future(std::move(test_file_10), test_double);
     std::cout << f_test_file_10.get().data.size_data() << std::endl;
-    // f_test_file_10.get().data.write(); Get this to work
+    //f_test_file_10.get().data.write(); //Get this to work
+                                         //futures don't like their mem. changed
     restore_checkpoint(f_test_file_10.get(), test_double2);
     std::cout << "Double: " << test_double << "=" << test_double2 << std::endl;
 

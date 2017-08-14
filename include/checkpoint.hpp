@@ -126,8 +126,8 @@ void save_checkpoint(checkpoint<C>& c, T&&... t)
 //Function object for save_checkpoint
 struct save_funct_obj
 {
-    template <typename C, typename... Ts>
-    C operator()(C&& c, Ts&&... ts) const
+    template <typename C_type, typename... Ts>
+    checkpoint<C_type> operator()(checkpoint<C_type>&& c, Ts&&... ts) const
     {
         //Create serialization archive from checkpoint data member
         hpx::serialization::output_archive ar(c.data);

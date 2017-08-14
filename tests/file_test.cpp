@@ -14,7 +14,7 @@ int main() {
 
  //Set up testing infrastucture
  size_t pass_counter=0;
- size_t num_tests=3;
+ size_t num_tests=4;
 
  size_t count;
  off_t offset=17;
@@ -40,7 +40,7 @@ int main() {
  hpxio_file file2("test2.txt", count);
  file2.save("test3.txt");
  
- //Test 3 - Test that all is working correctly
+ //Test 3 - Test that file was written correctly
  hpxio_file file3("test3.txt");
  hpxio_file file4("test.txt");
  
@@ -48,11 +48,24 @@ int main() {
   pass_counter+=2;
  }
  file3.save();
+
+ //Test 4 - Test copy and move constructors
+ hpxio_file file5(file4);
+ file5.is_open();
+ hpxio_file file6(std::move(file5));
+ file6.save();
  
+ if(file4.data == file6.data)
+ {
+  pass_counter+=1;
+ }
+
  //Clean up
  file2.remove_file();
  file3.remove_file();
  file4.remove_file();
+ file5.remove_file();
+ file6.remove_file();
  
  if (pass_counter == num_tests) { 
   hpx::cout<<"All File Tests Pass!"<<std::endl; 

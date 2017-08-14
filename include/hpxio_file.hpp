@@ -27,6 +27,8 @@ public:
     typedef hpx::serialization::serialize_buffer<char> buffer_type;
     hpxio_file(std::string file_name_arg);                  // Load a file
     hpxio_file(std::string file_name_arg, size_t count);    // Load a file
+    hpxio_file(const hpxio_file& org_file);
+    hpxio_file(hpxio_file&& old_file);
 
     std::string file_name;
     hpx::io::base_file file_handle_read;
@@ -137,6 +139,46 @@ hpxio_file::hpxio_file(std::string file_name_arg, size_t count)
     }
     else
         std::cerr << "Error: No file found!" << std::endl;
+}
+
+hpxio_file::hpxio_file(const hpxio_file& org_file)
+  : file_name(org_file.file_name)
+  , position(org_file.position)
+  , data(org_file.data)
+{
+    //Instantiate Read and Write handles
+    file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+    file_handle_write =
+        hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+
+    //Open handles
+    file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY);
+    file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
+    
+    if (!file_handle_read.is_open(hpx::launch::sync))
+    {
+        std::cerr << "Error: No file found!" << std::endl;
+    } 
+}
+
+hpxio_file::hpxio_file(hpxio_file && old_file)
+  : file_name(old_file.file_name)
+  , position(old_file.position)
+  , data(std::move(old_file.data))
+{
+    //Instantiate Read and Write handles
+    file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+    file_handle_write =
+        hpx::new_<hpx::io::server::local_file>(hpx::find_here());
+
+    //Open handles
+    file_handle_read.open(hpx::launch::sync, file_name, O_RDONLY);
+    file_handle_write.open(hpx::launch::sync, file_name, O_WRONLY);
+    
+    if (!file_handle_read.is_open(hpx::launch::sync))
+    {
+        std::cerr << "Error: No file found!" << std::endl;
+    } 
 }
 
 //is_open()
