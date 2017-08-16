@@ -150,13 +150,13 @@ hpx::future<checkpoint<C_type>> save_checkpoint_future(checkpoint<C_type>&& c,
 }
 
 //Resurrect Function
-template <typename C, typename... T>
-void restore_checkpoint(checkpoint<C> const& c, T&... t)
+template <typename C_type, typename... T>
+void restore_checkpoint(checkpoint<C_type> const& c, T&... t)
 {
     {
         //Create seriaalization archive
         hpx::serialization::input_archive ar(c.data,
-            hpx::traits::serialization_access_data<C>::size(
+            hpx::traits::serialization_access_data<C_type>::size(
                 c.data));    //Get the size of the container
 
         //De-serialize data

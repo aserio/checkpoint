@@ -184,6 +184,28 @@ int main()
                                          //futures don't like their mem. changed
     restore_checkpoint(f_test_file_10.get(), test_double2);
     std::cout << "Double: " << test_double << "=" << test_double2 << std::endl;
+    std::cout<<"I still need some work to write my data to file."<<std::endl;
+
+    //Test 11
+    //separate file usecase
+    std::cout << "Test 11:" << std::endl;
+    hpxio_file test_file_11("test_file_11.txt");
+    std::vector<float> vec11{1.02, 1.03, 1.04, 1.05};
+    //checkpoint<> check11;
+    //hpx::future<checkpoint<>> fut_11=save_checkpoint_future(std::move(check11),vec11);
+    hpx::future<checkpoint<>> fut_11=save_checkpoint_future(checkpoint<>(),vec11);
+    test_file_11.write(fut_11.get().data);
+    
+    std::vector<float> vec_11_1;
+    hpxio_file test_file_11_1("test_file_11.txt");
+    checkpoint<> archive11;
+    archive11.data=test_file_11_1.data;
+    restore_checkpoint(archive11, vec_11_1);
+
+    if(vec11==vec_11_1)
+    {
+        std::cout<<"I work!"<<std::endl;
+    }
 
     return 0;
 }

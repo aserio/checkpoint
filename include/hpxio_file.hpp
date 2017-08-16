@@ -41,6 +41,7 @@ public:
     size_t size_data() const;
     void resize_data(size_t count);
     void write();
+    void write(std::vector<char> container);
     void write(off_t const offset);
     void write_data(void const* address, size_t count, size_t current);
     void read(size_t const count, off_t const offset);
@@ -64,13 +65,14 @@ public:
 // Constructors
 hpxio_file::hpxio_file(std::string file_name_arg)
 {
+    file_name = file_name_arg;
     size_t count;
     //Instantiate Read and Write handles
     file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
     file_handle_write =
         hpx::new_<hpx::io::server::local_file>(hpx::find_here());
 
-    if (access(file_name_arg.c_str(), F_OK) == 0)
+    if (access(file_name.c_str(), F_OK) == 0)
     {
         std::ifstream temp_handle(file_name_arg);
         if (temp_handle)
@@ -166,6 +168,9 @@ hpxio_file::hpxio_file(hpxio_file && old_file)
   , position(old_file.position)
   , data(std::move(old_file.data))
 {
+    //Close old_file 
+    old_file.close();
+
     //Instantiate Read and Write handles
     file_handle_read = hpx::new_<hpx::io::server::local_file>(hpx::find_here());
     file_handle_write =
@@ -215,6 +220,12 @@ void hpxio_file::resize_data(std::size_t count)
 void hpxio_file::write()
 {
     buffer_type buffer(data.data(), data.size(), buffer_type::reference);
+    file_handle_write.write(hpx::launch::sync, buffer);
+}
+
+void hpxio_file::write(std::vector<char> container)
+{
+    buffer_type buffer(container.data(), container.size(), buffer_type::reference);
     file_handle_write.write(hpx::launch::sync, buffer);
 }
 
