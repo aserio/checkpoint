@@ -37,6 +37,8 @@
 #include <hpx/include/components.hpp>
 #include <hpx/include/serialization.hpp>
 
+#include <fstream>
+
 //Checkpoint Traits
 template <typename T>
 struct can_write : std::false_type
@@ -100,6 +102,19 @@ struct checkpoint
         data = std::move(c.data);
     }
 
+    void load(std::string file_name)
+    {
+        std::ifstream ifs(file_name);
+        if(ifs)                               //Check fstream is open
+        {
+            ifs.seekg(0, ifs.end);
+            int length = ifs.tellg();         //Get length of file
+            ifs.seekg(0, ifs.beg);
+            data.resize(length);
+            ifs.read(data.data(), length);
+        }
+    }
+    
     void write()
     {
         static_assert(can_write<T>::value, "No write function (or can_write "
@@ -126,8 +141,8 @@ void save_checkpoint(checkpoint<C>& c, T&&... t)
 //Function object for save_checkpoint
 struct save_funct_obj
 {
-    template <typename C_type, typename... Ts>
-    checkpoint<C_type> operator()(checkpoint<C_type>&& c, Ts&&... ts) const
+    template <typename ChkType, typename... Ts>
+    checkpoint<ChkType> operator()(checkpoint<ChkType>&& c, Ts&&... ts) const
     {
         //Create serialization archive from checkpoint data member
         hpx::serialization::output_archive ar(c.data);
@@ -139,8 +154,8 @@ struct save_funct_obj
 };
 
 //Store function - With futures!
-template <typename C_type, typename... Ts>
-hpx::future<checkpoint<C_type>> save_checkpoint_future(checkpoint<C_type>&& c,
+template <typename ChkType, typename... Ts>
+hpx::future<checkpoint<ChkType>> save_checkpoint_future(checkpoint<ChkType>&& c,
     Ts&&... ts)
 {
     {
@@ -150,13 +165,13 @@ hpx::future<checkpoint<C_type>> save_checkpoint_future(checkpoint<C_type>&& c,
 }
 
 //Resurrect Function
-template <typename C_type, typename... T>
-void restore_checkpoint(checkpoint<C_type> const& c, T&... t)
+template <typename ChkType, typename... T>
+void restore_checkpoint(checkpoint<ChkType> const& c, T&... t)
 {
     {
         //Create seriaalization archive
         hpx::serialization::input_archive ar(c.data,
-            hpx::traits::serialization_access_data<C_type>::size(
+            hpx::traits::serialization_access_data<ChkType>::size(
                 c.data));    //Get the size of the container
 
         //De-serialize data

@@ -187,12 +187,10 @@ int main()
     std::cout<<"I still need some work to write my data to file."<<std::endl;
 
     //Test 11
-    //separate file usecase
+    //separate checkpoint and file usecase
     std::cout << "Test 11:" << std::endl;
     hpxio_file test_file_11("test_file_11.txt");
     std::vector<float> vec11{1.02, 1.03, 1.04, 1.05};
-    //checkpoint<> check11;
-    //hpx::future<checkpoint<>> fut_11=save_checkpoint_future(std::move(check11),vec11);
     hpx::future<checkpoint<>> fut_11=save_checkpoint_future(checkpoint<>(),vec11);
     test_file_11.write(fut_11.get().data);
     
@@ -206,6 +204,20 @@ int main()
     {
         std::cout<<"I work!"<<std::endl;
     }
+
+    //Test 12
+    //test .load()
+    std::cout << "Test 12:" << std::endl;
+    std::vector<float> vec12;
+    checkpoint<> archive12;
+    archive12.load("test_file_11.txt");
+    restore_checkpoint(archive12, vec12);
+    if(vec12==vec_11_1)
+    {
+        std::cout<<"I work!"<<std::endl;
+    }
+    
+
 
     return 0;
 }
