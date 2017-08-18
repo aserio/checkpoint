@@ -45,140 +45,145 @@ struct can_write : std::false_type
 {
 };    // Create an template specialization to expose a write function
 
-//Checkpoint Object
-template <typename T = std::vector<char>>
-struct checkpoint
+namespace checkpoint_ns
 {
-    checkpoint()
+    //Checkpoint Object
+    template <typename T = std::vector<char>>
+    struct checkpoint
     {
-    }
-    checkpoint(checkpoint const& c)
-      : data(c.data)
-    {
-    }
-    checkpoint(checkpoint&& c)
-      : data(std::move(c.data))
-    {
-    }
-    ~checkpoint()
-    {
-    }
+        checkpoint()
+        {
+        }
+        checkpoint(checkpoint const& c)
+          : data(c.data)
+        {
+        }
+        checkpoint(checkpoint&& c)
+         : data(std::move(c.data))
+        {
+        }
+        ~checkpoint()
+        {
+        }
 
-    //Constructors
-    // the enable if is needed to force the compiler to use the move constructor
-    // if passing a type 'checkpoint'
-    template <typename T_,
-        typename U = typename std::enable_if<!std::is_same<checkpoint<T>,
-            typename std::decay<T_>::type>::value>::type>
-    explicit checkpoint(T_&& t)
-      : data(std::forward<T_>(t))
-    {
-    }    //Pass args to data structure constr. if first arg is not type checkpoint
+        //Constructors
+        // the enable if is needed to force the compiler to use the move constructor
+        // if passing a type 'checkpoint'
+        template <typename T_,
+            typename U = typename std::enable_if<!std::is_same<checkpoint<T>,
+                typename std::decay<T_>::type>::value>::type>
+        explicit checkpoint(T_&& t)
+          : data(std::forward<T_>(t))
+        {
+        }    //Pass args to data structure constr. if first arg is not type checkpoint
 
-    template <typename T1, typename T2, typename... Ts>
-    explicit checkpoint(T1&& t1, T2&& t2, Ts&&... ts)
-      : data(std::forward<T1>(t1),
-            std::forward<T2>(t2),
-            std::forward<Ts>(ts)...)
-    {
-    }    //Pass args to data structure constuctor
+        template <typename T1, typename T2, typename... Ts>
+        explicit checkpoint(T1&& t1, T2&& t2, Ts&&... ts)
+          : data(std::forward<T1>(t1),
+                std::forward<T2>(t2),
+                std::forward<Ts>(ts)...)
+        {
+        }    //Pass args to data structure constuctor
 
-    T data;
+        T data;
 
-    //Serialization Definition
-    friend class hpx::serialization::access;
-    template <typename Volume>
-    void serialize(Volume& vol, const unsigned int version)
-    {
-        vol& data;
+        //Serialization Definition
+        friend class hpx::serialization::access;
+        template <typename Volume>
+        void serialize(Volume& vol, const unsigned int version)
+        {
+            vol& data;
+        };
+
+        checkpoint& operator=(checkpoint const& c)
+        {
+            data = c.data;
+        }
+        checkpoint& operator=(checkpoint&& c)
+        {
+            data = std::move(c.data);
+        }
+
+        void load(std::string file_name)
+        {
+            std::ifstream ifs(file_name);
+            if(ifs)                               //Check fstream is open
+            {
+                ifs.seekg(0, ifs.end);
+                int length = ifs.tellg();         //Get length of file
+                ifs.seekg(0, ifs.beg);
+                data.resize(length);
+                ifs.read(data.data(), length);
+            }
+        }
+    
+        void write()
+        {
+            static_assert(can_write<T>::value, "No write function (or can_write "
+                                               "trait) is implemented for this "
+                                               "type.");
+            data.write();
+        }
     };
 
-    checkpoint& operator=(checkpoint const& c)
+    //Store function
+    template <typename C, typename... T>
+    void save_checkpoint(checkpoint<C>& c, T&&... t)
     {
-        data = c.data;
-    }
-    checkpoint& operator=(checkpoint&& c)
-    {
-        data = std::move(c.data);
+        {
+            //Create serialization archive from checkpoint data member
+            hpx::serialization::output_archive ar(c.data);
+    
+            //Serialize data
+            int const sequencer[] = {//Trick to expand the variable pack
+                (ar << t, 0)...};    //Takes advantage of the comma operator
+        }
     }
 
-    void load(std::string file_name)
+    //Function object for save_checkpoint
+    struct save_funct_obj
     {
-        std::ifstream ifs(file_name);
-        if(ifs)                               //Check fstream is open
+        template <typename ChkType, typename... Ts>
+        checkpoint<ChkType> operator()(checkpoint<ChkType>&& c, Ts&&... ts) const
         {
-            ifs.seekg(0, ifs.end);
-            int length = ifs.tellg();         //Get length of file
-            ifs.seekg(0, ifs.beg);
-            data.resize(length);
-            ifs.read(data.data(), length);
+            //Create serialization archive from checkpoint data member
+            hpx::serialization::output_archive ar(c.data);
+            //Serialize data
+            int const sequencer[] = { //Trick to expand the variable pack
+                (ar << ts, 0)...};    //Takes advantage of the comma operator
+            return c;
+        }
+    };
+    
+    //Store function - With futures!
+    template <typename ChkType, typename... Ts>
+    hpx::future<checkpoint<ChkType>> save_checkpoint_future(checkpoint<ChkType>&& c,
+        Ts&&... ts)
+    {
+        {
+            return hpx::dataflow(
+                save_funct_obj(), std::move(c), std::forward<Ts>(ts)...);
         }
     }
     
-    void write()
+    //Resurrect Function
+    template <typename ChkType, typename... T>
+    void restore_checkpoint(checkpoint<ChkType> const& c, T&... t)
     {
-        static_assert(can_write<T>::value, "No write function (or can_write "
-                                           "trait) is implemented for this "
-                                           "type.");
-        data.write();
-    }
-};
-
-//Store function
-template <typename C, typename... T>
-void save_checkpoint(checkpoint<C>& c, T&&... t)
-{
-    {
-        //Create serialization archive from checkpoint data member
-        hpx::serialization::output_archive ar(c.data);
-
-        //Serialize data
-        int const sequencer[] = {//Trick to expand the variable pack
-            (ar << t, 0)...};    //Takes advantage of the comma operator
+        {
+            //Create seriaalization archive
+            hpx::serialization::input_archive ar(c.data,
+                hpx::traits::serialization_access_data<ChkType>::size(
+                    c.data));    //Get the size of the container
+    
+            //De-serialize data
+            int const sequencer[] = {//Trick to exand the variable pack
+                (ar >> t, 0)...};    //Takes advantage of the comma operator
+        }
     }
 }
 
-//Function object for save_checkpoint
-struct save_funct_obj
-{
-    template <typename ChkType, typename... Ts>
-    checkpoint<ChkType> operator()(checkpoint<ChkType>&& c, Ts&&... ts) const
-    {
-        //Create serialization archive from checkpoint data member
-        hpx::serialization::output_archive ar(c.data);
-        //Serialize data
-        int const sequencer[] = { //Trick to expand the variable pack
-            (ar << ts, 0)...};    //Takes advantage of the comma operator
-        return c;
-    }
-};
-
-//Store function - With futures!
-template <typename ChkType, typename... Ts>
-hpx::future<checkpoint<ChkType>> save_checkpoint_future(checkpoint<ChkType>&& c,
-    Ts&&... ts)
-{
-    {
-        return hpx::dataflow(
-            save_funct_obj(), std::move(c), std::forward<Ts>(ts)...);
-    }
-}
-
-//Resurrect Function
-template <typename ChkType, typename... T>
-void restore_checkpoint(checkpoint<ChkType> const& c, T&... t)
-{
-    {
-        //Create seriaalization archive
-        hpx::serialization::input_archive ar(c.data,
-            hpx::traits::serialization_access_data<ChkType>::size(
-                c.data));    //Get the size of the container
-
-        //De-serialize data
-        int const sequencer[] = {//Trick to exand the variable pack
-            (ar >> t, 0)...};    //Takes advantage of the comma operator
-    }
-}
+using checkpoint=checkpoint_ns::checkpoint<>;
 
 /*
 /////////// Checkpoint Component ///////////////

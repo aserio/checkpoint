@@ -138,9 +138,9 @@ std::ostream& operator<<(std::ostream& os, partition_data const& c)
 
 struct backup
 {
-    std::vector<checkpoint<>> bin;
+    std::vector<checkpoint> bin;
     std::string file_name_;
-    checkpoint<hpxio_file> file_archive;
+    checkpoint_ns::checkpoint<hpxio_file> file_archive;
 
     backup(std::string file_name, size_t np)
       : bin(np)
