@@ -217,7 +217,23 @@ int main()
         std::cout<<"I work!"<<std::endl;
     }
     
+    //Test 13
+    //test policies
+    std::cout << "Test 13:" << std::endl;
+    int a13=10, b13=20, c13=30;
+    hpx::future<checkpoint> f_13=save_checkpoint_future(hpx::launch::async, checkpoint(), a13, b13, c13);
+    int a13_1, b13_1, c13_1;
+    restore_checkpoint(f_13.get(), a13_1, b13_1, c13_1);
+ //   checkpoint archive13 = save_checkpoint_future(hpx::launch::sync, checkpoint(), a13_1, b13_1, c13_1);
+    hpx::future<checkpoint> f_archive13 = save_checkpoint_future(hpx::launch::sync, checkpoint(), a13_1, b13_1, c13_1);
+    int a13_2, b13_2, c13_2;
+    restore_checkpoint(f_archive13.get(), a13_2, b13_2, c13_2);
+    if(a13==a13_2 && b13==b13_2 && c13==c13_2)
+    {
+        std::cout<<"I work!"<<std::endl;
+    }
 
+    
 
     return 0;
 }
