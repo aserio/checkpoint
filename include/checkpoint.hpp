@@ -45,18 +45,6 @@ struct can_write : std::false_type
 {
 };    // Create an template specialization to expose a write function
 
-/*
-template <typename T>
-struct is_policy 
-{
-    T t;
-    static const bool value;
-    constexpr is_policy(hpx::detail::launch_policy p) : value(true)
-    {
-    }
-    static const bool value;
-};
-*/
 namespace checkpoint_ns
 {
     //Checkpoint Object
@@ -168,7 +156,6 @@ namespace checkpoint_ns
     };
     
     //Store function - With futures!
-//    template <typename ChkType, typename... Ts, typename U = typename std::enable_if<!is_policy<ChkType>::value>::type>
     template <typename ChkType, typename... Ts>
     hpx::future<checkpoint<ChkType>> save_checkpoint_future(checkpoint<ChkType>&& c,
         Ts&&... ts)
@@ -181,13 +168,12 @@ namespace checkpoint_ns
     
     
     //Store function - With futures and policies!
-    template <typename Policy, typename ChkType, typename... Ts>
+    template <typename ChkType, typename... Ts>
     hpx::future<checkpoint<ChkType>> save_checkpoint_future(
-          Policy p
+          hpx::launch p
         , checkpoint<ChkType>&& c
         , Ts&&... ts)
     {
- //       if (p==hpx::launch::async)
         {
             return hpx::dataflow(
                   p
@@ -195,29 +181,25 @@ namespace checkpoint_ns
                 , std::move(c)
                 , std::forward<Ts>(ts)...);
         }
-//        else 
-//        {
-//            std::cerr<<"Invalid Policy passed to save_checkpoint"<<std::endl;
-//        }
     }
-/*
-    template <typename Policy, typename ChkType, typename... Ts>
+
+    template <typename ChkType, typename... Ts>
     checkpoint<ChkType> save_checkpoint_future(
-          Policy p
+          hpx::launch::sync_policy sync_p
         , checkpoint<ChkType>&& c
         , Ts&&... ts)
     {
         {
             hpx::future<checkpoint<ChkType>> f_chk = 
                 hpx::dataflow(
-                      p
+                      sync_p
                     , save_funct_obj()
                     , std::move(c)
                     , std::forward<Ts>(ts)...);
             return f_chk.get();
         }
     }
-*/
+
     //Resurrect Function
     template <typename ChkType, typename... T>
     void restore_checkpoint(checkpoint<ChkType> const& c, T&... t)
