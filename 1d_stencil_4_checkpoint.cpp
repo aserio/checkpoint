@@ -164,13 +164,13 @@ struct backup
 
     void save(partition_data const& status, std::size_t index)
     {
-        save_checkpoint(bin[index], status);
+        bin[index]=save_checkpoint(hpx::launch::sync, checkpoint(), status);
     }
 
     void write()
     {
         checkpoint archive_data = 
-            save_checkpoint_future (hpx::launch::sync 
+            save_checkpoint(hpx::launch::sync 
                                   , checkpoint()
                                   , bin);
         file_archive.write(archive_data.data);

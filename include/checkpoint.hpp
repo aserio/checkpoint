@@ -10,24 +10,14 @@
 // object.
 //
 // Store takes a type 'checkpoint' and any number of objects
-// which you wish to store. Users can create a custom type to
-// pass as a template argument to a checkpoint object. The
-// user must take care to ensure that the created type exposes
-// the proper traits as required by serialization.
+// which you wish to store.
 //
 // Resurrect takes the checkpoint object and the container
 // which to store the objects in the byte stream (in the same order
 // as they were placed in).
 //
-// Checkpoint is the container object which must be passed to save_checkpoint.
-// Checkpoint takes a user supplied type to store the data in.
-// By default checkpoint uses std::vector<char>.
-//
-// To-Do:
-//    - Wrap serialized data in a component?
-//       -> Return a GID
-//    - Pass a component to save_checkpoint
-//
+// Checkpoint is the container object which must be passed to save_checkpoint 
+// and restore_checkpoint.
 
 #if !defined(CHECKPOINT_HPP_07262017)
 #define CHECKPOINT_HPP_07262017
@@ -38,12 +28,6 @@
 #include <hpx/include/serialization.hpp>
 
 #include <fstream>
-
-//Checkpoint Traits
-template <typename T>
-struct can_write : std::false_type
-{
-};    // Create an template specialization to expose a write function
 
 namespace checkpoint_ns
 {
@@ -70,25 +54,7 @@ namespace checkpoint_ns
         {
             this->load(file_name);
         }
-/*
-        // the enable if is needed to force the compiler to use the move constructor
-        // if passing a type 'checkpoint'
-        template <typename T_,
-            typename U = typename std::enable_if<!std::is_same<checkpoint<T>,
-                typename std::decay<T_>::type>::value>::type>
-        explicit checkpoint(T_&& t)
-          : data(std::forward<T_>(t))
-        {
-        }    //Pass args to data structure constr. if first arg is not type checkpoint
 
-        template <typename T1, typename T2, typename... Ts>
-        explicit checkpoint(T1&& t1, T2&& t2, Ts&&... ts)
-          : data(std::forward<T1>(t1),
-                std::forward<T2>(t2),
-                std::forward<Ts>(ts)...)
-        {
-        }    //Pass args to data structure constuctor
-*/
         std::vector<char> data;
 
         //Serialization Definition
@@ -125,30 +91,7 @@ namespace checkpoint_ns
         {
             return data.size();
         }
-/*    
-        void write()
-        {
-            static_assert(can_write<T>::value, "No write function (or can_write "
-                                               "trait) is implemented for this "
-                                               "type.");
-            data.write();
-        }
-*/
     };
-
-    //Store function
-    template <typename... T>
-    void save_checkpoint(checkpoint& c, T&&... t)
-    {
-        {
-            //Create serialization archive from checkpoint data member
-            hpx::serialization::output_archive ar(c.data);
-    
-            //Serialize data
-            int const sequencer[] = {//Trick to expand the variable pack
-                (ar << t, 0)...};    //Takes advantage of the comma operator
-        }
-    }
 
     //Function object for save_checkpoint
     struct save_funct_obj
@@ -167,7 +110,7 @@ namespace checkpoint_ns
     
     //Store function - With futures!
     template <typename... Ts>
-    hpx::future<checkpoint> save_checkpoint_future(checkpoint&& c,
+    hpx::future<checkpoint> save_checkpoint(checkpoint&& c,
         Ts&&... ts)
     {
         {
@@ -179,7 +122,7 @@ namespace checkpoint_ns
     
     //Store function - With futures and policies!
     template <typename... Ts>
-    hpx::future<checkpoint> save_checkpoint_future(
+    hpx::future<checkpoint> save_checkpoint(
           hpx::launch p
         , checkpoint&& c
         , Ts&&... ts)
@@ -194,7 +137,7 @@ namespace checkpoint_ns
     }
 
     template <typename... Ts>
-    checkpoint save_checkpoint_future(
+    checkpoint save_checkpoint(
           hpx::launch::sync_policy sync_p
         , checkpoint&& c
         , Ts&&... ts)
@@ -225,11 +168,9 @@ namespace checkpoint_ns
     }
 }
 
-using checkpoint=checkpoint_ns::checkpoint;
+using checkpoint_ns::checkpoint;
 using checkpoint_ns::save_checkpoint;
 using checkpoint_ns::restore_checkpoint;
-
-using checkpoint_ns::save_checkpoint_future;
 
 /*
 /////////// Checkpoint Component ///////////////

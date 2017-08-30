@@ -49,9 +49,15 @@ int main()
             hpx::cout << vec[i] << std::endl;
     }
 
-    save_checkpoint(archive, character, integer, flt, boolean, str, vec);
+    hpx::shared_future<checkpoint> f_archive = save_checkpoint(std::move(archive)
+                                         , character
+                                         , integer
+                                         , flt
+                                         , boolean
+                                         , str
+                                         , vec);
     restore_checkpoint(
-        archive, character2, integer2, flt2, boolean2, str2, vec2);
+        f_archive.get(), character2, integer2, flt2, boolean2, str2, vec2);
 
     //Print out resurected variables
     hpx::cout << "Resurrected Variables" << std::endl
@@ -79,9 +85,9 @@ int main()
     //Test 2
     hpx::cout << "Test 2:" << std::endl;
 
-    archive2 = archive;
+    archive2 = f_archive.get();
     restore_checkpoint(
-        archive, character2, integer2, flt2, boolean2, str2, vec2);
+        archive2, character2, integer2, flt2, boolean2, str2, vec2);
 
     if (character == character2 && integer == integer2 && flt == flt2 &&
         boolean == boolean2 && str == str2 &&
@@ -93,9 +99,9 @@ int main()
     //Test 3
     hpx::cout << "Test 3:" << std::endl;
 
-    checkpoint archive3;
-    save_checkpoint(archive3, vec, integer);
-    restore_checkpoint(archive3, vec2, integer2);
+    hpx::future<checkpoint> archive3=
+                               save_checkpoint(checkpoint(), vec, integer);
+    restore_checkpoint(archive3.get(), vec2, integer2);
 
     if (std::equal(vec.begin(), vec.end(), vec2.begin()) && integer == integer2)
     {
@@ -112,13 +118,14 @@ int main()
     omg.write();
 
     //Test 5
-    checkpoint archive4;
     std::vector<int> test_vec;
     for (int c = 0; c < 101; c++)
     {
         test_vec.push_back(c);
     }
-    save_checkpoint(archive4, test_vec);
+    checkpoint archive4 = save_checkpoint(hpx::launch::sync
+                                        , checkpoint()
+                                        , test_vec);
 
     //Test 6
     std::cout << "Test 6:" << std::endl;
@@ -135,7 +142,7 @@ int main()
     hpx::future<std::vector<int>> test_vec2_future =
         hpx::make_ready_future(test_vec2);
     hpx::future<checkpoint> f_check =
-        save_checkpoint_future(std::move(archive5), test_vec2_future);
+        save_checkpoint(std::move(archive5), test_vec2_future);
     hpx::future<std::vector<int>> test_vec3_future;
     restore_checkpoint(f_check.get(), test_vec3_future);
     if (test_vec2 == test_vec3_future.get())
@@ -154,7 +161,7 @@ int main()
     }
 
     //Test 9
-    //test save_checkpoint_future semantics
+    //test save_checkpoint future semantics
     std::cout << "Test 9:" << std::endl;
     int test_int = 8;
     int test_int2;
@@ -162,7 +169,7 @@ int main()
     hpx::future<int> test_f_int = hpx::make_ready_future(variable);
     hpx::future<int> test_f_int2;
     hpxio_file test_file_9("test_file_9.txt");
-    hpx::future<checkpoint> f_chk_file = save_checkpoint_future(
+    hpx::future<checkpoint> f_chk_file = save_checkpoint(
         std::move(checkpoint()), test_int, test_f_int);
     test_file_9.write(f_chk_file.get().data);
     
@@ -181,7 +188,7 @@ int main()
     double test_double2;
     checkpoint_ns::checkpoint<hpxio_file> test_file_10("test_file_10.txt");
     hpx::shared_future<checkpoint_ns::checkpoint<hpxio_file>> f_test_file_10 =
-        save_checkpoint_future(std::move(test_file_10), test_double);
+        save_checkpoint(std::move(test_file_10), test_double);
     std::cout << f_test_file_10.get().data.size_data() << std::endl;
     //f_test_file_10.get().data.write(); //Get this to work
                                          //futures don't like their mem. changed
@@ -194,7 +201,7 @@ int main()
     std::cout << "Test 11:" << std::endl;
     hpxio_file test_file_11("test_file_11.txt");
     std::vector<float> vec11{1.02, 1.03, 1.04, 1.05};
-    hpx::future<checkpoint> fut_11=save_checkpoint_future(checkpoint(),vec11);
+    hpx::future<checkpoint> fut_11=save_checkpoint(checkpoint(),vec11);
     test_file_11.write(fut_11.get().data);
     
     std::vector<float> vec_11_1;
@@ -224,10 +231,10 @@ int main()
     //test policies
     std::cout << "Test 13:" << std::endl;
     int a13=10, b13=20, c13=30;
-    hpx::future<checkpoint> f_13=save_checkpoint_future(hpx::launch::async, checkpoint(), a13, b13, c13);
+    hpx::future<checkpoint> f_13=save_checkpoint(hpx::launch::async, checkpoint(), a13, b13, c13);
     int a13_1, b13_1, c13_1;
     restore_checkpoint(f_13.get(), a13_1, b13_1, c13_1);
-    checkpoint archive13 = save_checkpoint_future(hpx::launch::sync, checkpoint(), a13_1, b13_1, c13_1);
+    checkpoint archive13 = save_checkpoint(hpx::launch::sync, checkpoint(), a13_1, b13_1, c13_1);
     int a13_2, b13_2, c13_2;
     restore_checkpoint(archive13, a13_2, b13_2, c13_2);
     if(a13==a13_2 && b13==b13_2 && c13==c13_2)

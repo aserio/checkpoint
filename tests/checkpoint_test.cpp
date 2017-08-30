@@ -52,8 +52,15 @@ int main() {
  }
 */
  
- save_checkpoint(archive, character, integer, flt, boolean, str, vec);
- restore_checkpoint(archive, character2, integer2, flt2, boolean2, str2, vec2);
+ hpx::shared_future<checkpoint> f_archive = save_checkpoint(std::move(archive)
+                                         , character
+                                         , integer
+                                         , flt
+                                         , boolean
+                                         , str
+                                         , vec);
+ restore_checkpoint(
+        f_archive.get(), character2, integer2, flt2, boolean2, str2, vec2);
 
  //Print out resurected variables 
 /*
@@ -79,8 +86,8 @@ int main() {
  //Test 2 - Test equal assignment
  //hpx::cout<<"Test 2:"<<std::endl;
  
- archive2=archive;
- restore_checkpoint(archive, character2, integer2, flt2, boolean2, str2, vec2);
+ archive2=f_archive.get();
+ restore_checkpoint(archive2, character2, integer2, flt2, boolean2, str2, vec2);
  
  if (character == character2 && integer == integer2 && flt == flt2
       && boolean == boolean2 && str == str2 
@@ -91,15 +98,15 @@ int main() {
  //Test 3 - Test with hpxio_file
  //hpx::cout<<"Test 3:"<<std::endl;
  
- hpxio_file archive3("archive3.archive");
- checkpoint chk_3;
+ hpxio_file file_3("archive3.archive");
  std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
  std::vector<char> vec_char2;
  std::vector<int>  vec_int={1,2,3,4,5};
  std::vector<int>  vec_int2;
- save_checkpoint(chk_3, vec_char, vec_int);
- archive3.write(chk_3.data);
- restore_checkpoint(chk_3, vec_char2, vec_int2);
+ hpx::shared_future<checkpoint> chk_3 = 
+                        save_checkpoint(checkpoint(), vec_char, vec_int);
+ file_3.write(chk_3.get().data);
+ restore_checkpoint(chk_3.get(), vec_char2, vec_int2);
  
  if (std::equal(vec_char.begin(), vec_char.end(), vec_char2.begin()) 
       && std::equal(vec_int.begin(), vec_int.end(), vec_int2.begin())){
@@ -107,7 +114,7 @@ int main() {
  }
  
  //Clean up
- archive3.remove_file();
+ file_3.remove_file();
  
  //Report results of test
  if ( pass_counter == num_tests) { 

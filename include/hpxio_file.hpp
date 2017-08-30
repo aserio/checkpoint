@@ -370,11 +370,11 @@ namespace traits {
     };
 }
 }
-
+/*
 //Checkpoint Traits
 template <>
 struct can_write<hpxio_file> : std::true_type
 {
 };
-
+*/
 #endif
