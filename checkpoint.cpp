@@ -112,7 +112,6 @@ int main()
     omg.write();
 
     //Test 5
-    // checkpoint_ns::checkpoint<hpxio_file> archive4("test4.archive");
     checkpoint archive4;
     std::vector<int> test_vec;
     for (int c = 0; c < 101; c++)
@@ -120,7 +119,6 @@ int main()
         test_vec.push_back(c);
     }
     save_checkpoint(archive4, test_vec);
-    // archive4.data.write();
 
     //Test 6
     std::cout << "Test 6:" << std::endl;
@@ -163,14 +161,19 @@ int main()
     int variable = 10;
     hpx::future<int> test_f_int = hpx::make_ready_future(variable);
     hpx::future<int> test_f_int2;
-    hpx::future<checkpoint_ns::checkpoint<hpxio_file>> f_chk_file = save_checkpoint_future(
-        std::move(checkpoint_ns::checkpoint<hpxio_file>("test_file_9.txt")), test_int, test_f_int);
-    restore_checkpoint(f_chk_file.get(), test_int2, test_f_int2);
+    hpxio_file test_file_9("test_file_9.txt");
+    hpx::future<checkpoint> f_chk_file = save_checkpoint_future(
+        std::move(checkpoint()), test_int, test_f_int);
+    test_file_9.write(f_chk_file.get().data);
+    
+    checkpoint archive_9;
+    archive_9.load("test_file_9.txt");
+    restore_checkpoint(std::move(archive_9), test_int2, test_f_int2);
     if (test_int == test_int2 && variable == test_f_int2.get())
     {
         std::cout << "I work!" << std::endl;
     }
-
+/*
     //Test 10
     //more tests with hpxio_file
     std::cout << "Test 10:" << std::endl;
@@ -185,7 +188,7 @@ int main()
     restore_checkpoint(f_test_file_10.get(), test_double2);
     std::cout << "Double: " << test_double << "=" << test_double2 << std::endl;
     std::cout<<"I still need some work to write my data to file."<<std::endl;
-
+*/
     //Test 11
     //separate checkpoint and file usecase
     std::cout << "Test 11:" << std::endl;

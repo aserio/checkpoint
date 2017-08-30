@@ -48,7 +48,6 @@ struct can_write : std::false_type
 namespace checkpoint_ns
 {
     //Checkpoint Object
-    template <typename T = std::vector<char>>
     struct checkpoint
     {
         checkpoint()
@@ -66,7 +65,12 @@ namespace checkpoint_ns
         {
         }
 
-        //Constructors
+        //Other Constructors
+        checkpoint(std::string file_name)
+        {
+            this->load(file_name);
+        }
+/*
         // the enable if is needed to force the compiler to use the move constructor
         // if passing a type 'checkpoint'
         template <typename T_,
@@ -84,8 +88,8 @@ namespace checkpoint_ns
                 std::forward<Ts>(ts)...)
         {
         }    //Pass args to data structure constuctor
-
-        T data;
+*/
+        std::vector<char> data;
 
         //Serialization Definition
         friend class hpx::serialization::access;
@@ -116,7 +120,12 @@ namespace checkpoint_ns
                 ifs.read(data.data(), length);
             }
         }
-    
+
+        size_t size() const
+        {
+            return data.size();
+        }
+/*    
         void write()
         {
             static_assert(can_write<T>::value, "No write function (or can_write "
@@ -124,11 +133,12 @@ namespace checkpoint_ns
                                                "type.");
             data.write();
         }
+*/
     };
 
     //Store function
-    template <typename C, typename... T>
-    void save_checkpoint(checkpoint<C>& c, T&&... t)
+    template <typename... T>
+    void save_checkpoint(checkpoint& c, T&&... t)
     {
         {
             //Create serialization archive from checkpoint data member
@@ -143,8 +153,8 @@ namespace checkpoint_ns
     //Function object for save_checkpoint
     struct save_funct_obj
     {
-        template <typename ChkType, typename... Ts>
-        checkpoint<ChkType> operator()(checkpoint<ChkType>&& c, Ts&&... ts) const
+        template <typename... Ts>
+        checkpoint operator()(checkpoint&& c, Ts&&... ts) const
         {
             //Create serialization archive from checkpoint data member
             hpx::serialization::output_archive ar(c.data);
@@ -156,8 +166,8 @@ namespace checkpoint_ns
     };
     
     //Store function - With futures!
-    template <typename ChkType, typename... Ts>
-    hpx::future<checkpoint<ChkType>> save_checkpoint_future(checkpoint<ChkType>&& c,
+    template <typename... Ts>
+    hpx::future<checkpoint> save_checkpoint_future(checkpoint&& c,
         Ts&&... ts)
     {
         {
@@ -168,10 +178,10 @@ namespace checkpoint_ns
     
     
     //Store function - With futures and policies!
-    template <typename ChkType, typename... Ts>
-    hpx::future<checkpoint<ChkType>> save_checkpoint_future(
+    template <typename... Ts>
+    hpx::future<checkpoint> save_checkpoint_future(
           hpx::launch p
-        , checkpoint<ChkType>&& c
+        , checkpoint&& c
         , Ts&&... ts)
     {
         {
@@ -183,14 +193,14 @@ namespace checkpoint_ns
         }
     }
 
-    template <typename ChkType, typename... Ts>
-    checkpoint<ChkType> save_checkpoint_future(
+    template <typename... Ts>
+    checkpoint save_checkpoint_future(
           hpx::launch::sync_policy sync_p
-        , checkpoint<ChkType>&& c
+        , checkpoint&& c
         , Ts&&... ts)
     {
         {
-            hpx::future<checkpoint<ChkType>> f_chk = 
+            hpx::future<checkpoint> f_chk = 
                 hpx::dataflow(
                       sync_p
                     , save_funct_obj()
@@ -201,14 +211,12 @@ namespace checkpoint_ns
     }
 
     //Resurrect Function
-    template <typename ChkType, typename... T>
-    void restore_checkpoint(checkpoint<ChkType> const& c, T&... t)
+    template <typename... T>
+    void restore_checkpoint(checkpoint const& c, T&... t)
     {
         {
             //Create seriaalization archive
-            hpx::serialization::input_archive ar(c.data,
-                hpx::traits::serialization_access_data<ChkType>::size(
-                    c.data));    //Get the size of the container
+            hpx::serialization::input_archive ar(c.data, c.size());
     
             //De-serialize data
             int const sequencer[] = {//Trick to exand the variable pack
@@ -217,7 +225,7 @@ namespace checkpoint_ns
     }
 }
 
-using checkpoint=checkpoint_ns::checkpoint<>;
+using checkpoint=checkpoint_ns::checkpoint;
 using checkpoint_ns::save_checkpoint;
 using checkpoint_ns::restore_checkpoint;
 

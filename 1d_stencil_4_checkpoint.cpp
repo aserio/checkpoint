@@ -140,7 +140,7 @@ struct backup
 {
     std::vector<checkpoint> bin;
     std::string file_name_;
-    checkpoint_ns::checkpoint<hpxio_file> file_archive;
+    hpxio_file file_archive;
 
     backup(std::string file_name, size_t np)
       : bin(np)
@@ -158,7 +158,7 @@ struct backup
     }
     ~backup()
     {
-        file_archive.data.close();
+        file_archive.close();
         //    hpx::cout<<"I am death!"<<std::endl;
     }
 
@@ -169,14 +169,17 @@ struct backup
 
     void write()
     {
-        save_checkpoint(file_archive, bin);
-        file_archive.data.write();
+        checkpoint archive_data = 
+            save_checkpoint_future (hpx::launch::sync 
+                                  , checkpoint()
+                                  , bin);
+        file_archive.write(archive_data.data);
     }
 
     void revive(std::vector<std::vector<hpx::shared_future<partition_data>>>& U,
         std::size_t nx)
     {
-        restore_checkpoint(file_archive, bin);
+        restore_checkpoint(checkpoint(file_name_), bin);
         for (int i = 0; i < U[0].size(); i++)
         {
             partition_data temp(nx, double(i));
