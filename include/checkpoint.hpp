@@ -226,16 +226,17 @@ namespace checkpoint_ns
     }
 
     //Resurrect Function
-    template <typename... T>
-    void restore_checkpoint(checkpoint const& c, T&... t)
+    template <typename T, typename... Ts>
+    void restore_checkpoint(checkpoint const& c, T& t, Ts& ... ts)
     {
         {
             //Create seriaalization archive
             hpx::serialization::input_archive ar(c.data, c.size());
     
             //De-serialize data
+            ar >> t;
             int const sequencer[] = {//Trick to exand the variable pack
-                (ar >> t, 0)...};    //Takes advantage of the comma operator
+               (ar >> ts, 0)...};    //Takes advantage of the comma operator
         }
     }
 }
