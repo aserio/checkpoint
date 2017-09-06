@@ -15,9 +15,9 @@ include_directories(/home/aserio/git/pxfs/include/) #headers
 add_library (pxfs SHARED IMPORTED GLOBAL)
 set_target_properties (pxfs PROPERTIES 
  IMPORTED_LOCATION 
-   /home/aserio/lib/pxfs-v0.1.0-gcc6.3.0/lib/libhpx_base_file.so 
+   /home/aserio/lib/pxfs-v0.1.0-gcc7.2.0/lib/libhpx_base_file.so 
  IMPORTED_LOCATION_DEBUG
-  /home/aserio/lib/pxfs-v0.1.0-gcc6.3.0-debug/lib/libhpx_base_file.so )
+  /home/aserio/lib/pxfs-v0.1.0-gcc7.2.0-debug/lib/libhpx_base_file.so )
 
 #Including Headers
 include_directories (${PROJECT_SOURCE_DIR}/include/)

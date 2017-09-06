@@ -94,60 +94,132 @@ namespace checkpoint_ns
     };
 
     //Function object for save_checkpoint
-    struct save_funct_obj
+    namespace detail
     {
-        template <typename... Ts>
-        checkpoint operator()(checkpoint&& c, Ts&&... ts) const
-        {
-            //Create serialization archive from checkpoint data member
-            hpx::serialization::output_archive ar(c.data);
-            //Serialize data
-            int const sequencer[] = { //Trick to expand the variable pack
-                (ar << ts, 0)...};    //Takes advantage of the comma operator
-            return c;
-        }
-    };
-    
-    //Store function - With futures!
-    template <typename... Ts>
-    hpx::future<checkpoint> save_checkpoint(checkpoint&& c,
-        Ts&&... ts)
+        struct save_funct_obj
+     {
+         template <typename... Ts>
+         checkpoint operator()(checkpoint&& c, Ts&&... ts) const
+         {
+             //Create serialization archive from checkpoint data member
+             hpx::serialization::output_archive ar(c.data);
+             //Serialize data
+             int const sequencer[] = { //Trick to expand the variable pack
+                 (ar << ts, 0)...};    //Takes advantage of the comma operator
+             return c;
+         }
+     };
+    }
+
+    //Save_checkpoint function 
+    template <typename T
+            , typename... Ts
+            , typename U = typename std::enable_if<
+                    !hpx::traits::is_launch_policy<T>::value && 
+                    !std::is_same<typename std::decay<T>::type,checkpoint>::value
+                >::type
+             >
+    hpx::future<checkpoint> save_checkpoint(T&& t, Ts&&... ts)
     {
         {
             return hpx::dataflow(
-                save_funct_obj(), std::move(c), std::forward<Ts>(ts)...);
+                detail::save_funct_obj()
+              , std::move(checkpoint())
+              , std::forward<T>(t)
+              , std::forward<Ts>(ts)...);
+        }
+    }
+    
+    //Save_checkpoint function - Take a pre-initialized checkpoint
+    template <typename T, typename... Ts>
+    hpx::future<checkpoint> save_checkpoint(checkpoint&& c
+        , T&& t
+        , Ts&&... ts)
+    {
+        {
+            return hpx::dataflow(
+                detail::save_funct_obj()
+              , std::move(c)
+              , std::forward<T>(t)
+              , std::forward<Ts>(ts)...);
         }
     }
     
     
-    //Store function - With futures and policies!
-    template <typename... Ts>
+    //Store function - Policy overload
+    template <typename T, typename... Ts>
     hpx::future<checkpoint> save_checkpoint(
           hpx::launch p
-        , checkpoint&& c
+        , T&& t
         , Ts&&... ts)
     {
         {
             return hpx::dataflow(
                   p
-                , save_funct_obj()
-                , std::move(c)
+                , detail::save_funct_obj()
+                , std::move(checkpoint())
+                , std::forward<T>(t)
                 , std::forward<Ts>(ts)...);
         }
     }
 
-    template <typename... Ts>
+    //Store function - Policy overload & pre-initialized checkpoint
+    template <typename T, typename... Ts>
+    hpx::future<checkpoint> save_checkpoint(
+          hpx::launch p
+        , checkpoint&& c
+        , T&& t
+        , Ts&&... ts)
+    {
+        {
+            return hpx::dataflow(
+                  p
+                , detail::save_funct_obj()
+                , std::move(c)
+                , std::forward<T>(t)
+                , std::forward<Ts>(ts)...);
+        }
+    }
+
+    //Save_checkpoint function - With sync policy
+    template <typename T
+            , typename... Ts
+            , typename U = typename std::enable_if<
+                    !std::is_same<typename std::decay<T>::type,checkpoint>::value
+                >::type
+             >
     checkpoint save_checkpoint(
           hpx::launch::sync_policy sync_p
-        , checkpoint&& c
+        , T&& t
         , Ts&&... ts)
     {
         {
             hpx::future<checkpoint> f_chk = 
                 hpx::dataflow(
                       sync_p
-                    , save_funct_obj()
+                    , detail::save_funct_obj()
+                    , std::move(checkpoint())
+                    , std::forward<T>(t)
+                    , std::forward<Ts>(ts)...);
+            return f_chk.get();
+        }
+    }
+
+    //Save_checkpoint function - With sync policy & pre-init. checkpoint
+    template <typename T, typename... Ts>
+    checkpoint save_checkpoint(
+          hpx::launch::sync_policy sync_p
+        , checkpoint&& c
+        , T&& t
+        , Ts&&... ts)
+    {
+        {
+            hpx::future<checkpoint> f_chk = 
+                hpx::dataflow(
+                      sync_p
+                    , detail::save_funct_obj()
                     , std::move(c)
+                    , std::forward<T>(t)
                     , std::forward<Ts>(ts)...);
             return f_chk.get();
         }
