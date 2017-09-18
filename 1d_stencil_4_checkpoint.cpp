@@ -14,13 +14,17 @@
 // enables tuning the performance for the optimal grain size of the
 // computation. This example is still fully local but demonstrates nice
 // scalability on SMP machines.
-//
+// 
+// In this variation of stencil we use the save_checkpoint and 
+// revive_checkpint functions to back up the state of the applicaton
+// every n timesteps.
 //
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
 
 #include <hpx/include/parallel_algorithm.hpp>
+#include <hpx/include/iostreams.hpp>
 #include <boost/range/irange.hpp>
 
 #include <cstddef>
@@ -33,7 +37,6 @@
 #include "print_time_results.hpp"
 
 #include <checkpoint.hpp>
-#include <hpxio_file.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Command-line variables
@@ -140,26 +143,19 @@ struct backup
 {
     std::vector<checkpoint> bin;
     std::string file_name_;
-    hpxio_file file_archive;
 
     backup(std::string file_name, size_t np)
       : bin(np)
       , file_name_(file_name)
-      , file_archive(file_name)
     {
-        //    if (file_archive.data.is_open()) {hpx::cout<<"I am open at construction!"<<std::endl;}
     }
     backup(backup&& old)
       : bin(std::move(old.bin))
       , file_name_(old.file_name_)
-      , file_archive(old.file_name_)
     {
-        //    hpx::cout<<"I made a move!"<<std::endl;
     }
     ~backup()
     {
-        file_archive.close();
-        //    hpx::cout<<"I am death!"<<std::endl;
     }
 
     void save(partition_data const& status, std::size_t index)
@@ -172,13 +168,26 @@ struct backup
         checkpoint archive_data = 
             save_checkpoint(hpx::launch::sync 
                                   , bin);
-        file_archive.write(archive_data.data);
+        std::ofstream file_archive(file_name_);
+        if (file_archive.is_open())
+        {
+            file_archive.write(
+                archive_data.data.data()
+              , archive_data.data.size());
+        }
+        else
+        {
+            hpx::cout<<"Error opening file!"<<std::endl;
+        }
+        file_archive.close();
     }
 
     void revive(std::vector<std::vector<hpx::shared_future<partition_data>>>& U,
         std::size_t nx)
     {
-        restore_checkpoint(checkpoint(file_name_), bin);
+        checkpoint temp_archive;
+        temp_archive.load(file_name_);
+        restore_checkpoint(temp_archive, bin);        
         for (int i = 0; i < U[0].size(); i++)
         {
             partition_data temp(nx, double(i));
@@ -262,7 +271,7 @@ struct stepper
         std::uint64_t nd, std::uint64_t cp, std::string rsf, std::string fn)
     {
         using hpx::dataflow;
-        using hpx::util::unwrapped;
+        using hpx::util::unwrapping;
 
         // Set up Checkpointing
         int num_c = nt / cp;    //Number of checkpoints to be made
@@ -307,7 +316,7 @@ struct stepper
         // limit depth of dependency tree
         hpx::lcos::local::sliding_semaphore sem(nd);
 
-        auto Op = unwrapped(&stepper::heat_part);
+        auto Op = unwrapping(&stepper::heat_part);
 
         // Actual time step loop
         for (std::size_t t = 0; t != nt; ++t)

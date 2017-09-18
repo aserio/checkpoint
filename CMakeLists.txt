@@ -32,7 +32,7 @@ hpx_setup_target(checkpoint
 add_executable (1d_stencil_4_checkpoint 1d_stencil_4_checkpoint.cpp)
 hpx_setup_target(1d_stencil_4_checkpoint
   COMPONENT_DEPENDENCIES iostreams
-  DEPENDENCIES pxfs 
+#  DEPENDENCIES pxfs 
 )
 
 #Include Tests
