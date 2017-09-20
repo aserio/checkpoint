@@ -68,13 +68,24 @@ namespace checkpoint_ns
             data = std::move(c.data);
         }
 
+        bool operator==(checkpoint const& c) const
+        {
+            if(data == c.data)
+            {
+                 return true;
+            }
+            else
+            {
+               return false;
+            }
+        }
+         
+        // Expose iterators to access data held by checkpoint
         using const_iterator = std::vector<char>::const_iterator;
-
         const_iterator begin() const
         {
             return data.begin();
         }
-
         const_iterator end() const
         {
             return data.end();
