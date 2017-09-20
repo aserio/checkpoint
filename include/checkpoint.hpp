@@ -27,6 +27,8 @@
 #include <hpx/include/components.hpp>
 #include <hpx/include/serialization.hpp>
 
+#include <hpx/util/range.hpp>
+
 #include <fstream>
 
 namespace checkpoint_ns
@@ -57,14 +59,6 @@ namespace checkpoint_ns
 
         std::vector<char> data;
 
-        //Serialization Definition
-        friend class hpx::serialization::access;
-        template <typename Volume>
-        void serialize(Volume& vol, const unsigned int version)
-        {
-            vol& data;
-        };
-
         checkpoint& operator=(checkpoint const& c)
         {
             data = c.data;
@@ -72,6 +66,18 @@ namespace checkpoint_ns
         checkpoint& operator=(checkpoint&& c)
         {
             data = std::move(c.data);
+        }
+
+        using const_iterator = std::vector<char>::const_iterator;
+
+        const_iterator begin() const
+        {
+            return data.begin();
+        }
+
+        const_iterator end() const
+        {
+            return data.end();
         }
 
         void load(std::string file_name)
@@ -91,6 +97,15 @@ namespace checkpoint_ns
         {
             return data.size();
         }
+
+        //Serialization Definition
+        friend class hpx::serialization::access;
+        template <typename Volume>
+        void serialize(Volume& vol, const unsigned int version)
+        {
+            vol& data;
+        };
+
     };
 
     //Function object for save_checkpoint
@@ -106,6 +121,7 @@ namespace checkpoint_ns
              //Serialize data
              int const sequencer[] = { //Trick to expand the variable pack
                  (ar << ts, 0)...};    //Takes advantage of the comma operator
+             (void)sequencer;           // Suppress unused param. warnings
              return c;
          }
      };
@@ -237,6 +253,7 @@ namespace checkpoint_ns
             ar >> t;
             int const sequencer[] = {//Trick to exand the variable pack
                (ar >> ts, 0)...};    //Takes advantage of the comma operator
+            (void)sequencer;           // Suppress unused param. warnings
         }
     }
 }

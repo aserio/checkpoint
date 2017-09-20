@@ -248,7 +248,54 @@ int main()
         std::cout<<" I work!"<<std::endl;
     }
 
+    //Test 14
+    //separate checkpoint and file usecase
+    std::cout << "Test 14:";
+    std::ofstream test_file_14("checkpoint_test_file.txt");
+    std::vector<float> vec14{1.02, 1.03, 1.04, 1.05};
+    hpx::future<checkpoint> fut_14=save_checkpoint(vec14);
+    checkpoint archive14 = fut_14.get();
+    test_file_14.write(archive14.data.data(),archive14.size());
+    test_file_14.close();
+    {
+        std::cout<<" I work!"<<" I am: "<<archive14.size()<<std::endl;
+        std::ifstream ifs("checkpoint_test_file.txt");
+            if(ifs)                               //Check fstream is open
+            {
+                ifs.seekg(0, ifs.end);
+                int length = ifs.tellg();         //Get length of file
+                std::cout<<"File Length: "<<length<<std::endl;
+            }
+    }
+
+    //test .load()
+    std::vector<float> vec14_1;
+    checkpoint archive14_1;
+    archive14_1.load("checkpoint_test_file.txt");
+    restore_checkpoint(archive14_1, vec14_1);
+    if(vec14==vec14_1)
+    {
+        std::cout<<" I work!"<<std::endl;
+    }
     
+    //Test 15
+    // testing iterators
+    std::cout<<"Test 15:";
+    std::ofstream test_file_15("test_file_15.txt");
+    std::vector<int> vec15{1,2,3,4,5};
+    hpx::future<checkpoint> fut_15=save_checkpoint(vec15);
+    checkpoint archive15=fut_15.get();
+    std::copy(archive15.begin(), archive15.end(), std::ostream_iterator<char>(test_file_15));
+    test_file_15.flush();
+    
+    std::vector<int> vec15_1;
+    checkpoint archive15_1;
+    archive15_1.load("test_file_15.txt");
+    restore_checkpoint(archive15_1, vec15_1);
+    if(vec15==vec15_1)
+    {
+        std::cout<<" I work!"<<std::endl;
+    }
 
     return 0;
 }
