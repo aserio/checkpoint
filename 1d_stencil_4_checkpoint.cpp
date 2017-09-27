@@ -171,9 +171,7 @@ struct backup
         std::ofstream file_archive(file_name_);
         if (file_archive.is_open())
         {
-            file_archive.write(
-                archive_data.data.data()
-              , archive_data.data.size());
+            file_archive<<archive_data;
         }
         else
         {
@@ -186,7 +184,15 @@ struct backup
         std::size_t nx)
     {
         checkpoint temp_archive;
-        temp_archive.load(file_name_);
+        std::ifstream ist(file_name_, std::ios_base::binary);
+        if (ist)
+        {
+            ist>>temp_archive;
+        }
+        else
+        {
+            hpx::cout<<"Error: Input stream not open!"<<std::endl;
+        }
         restore_checkpoint(temp_archive, bin);        
         for (int i = 0; i < U[0].size(); i++)
         {

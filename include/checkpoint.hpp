@@ -29,16 +29,47 @@
 
 #include <hpx/util/range.hpp>
 
+#include <cstddef>
 #include <fstream>
+#include <iosfwd>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace checkpoint_ns
 {
+
+// Forward declarations
+class checkpoint;
+std::ostream& operator<<(std::ostream& ost, checkpoint const& ckp);
+std::istream& operator>>(std::istream& ist, checkpoint& ckp);
+namespace detail
+{
+    struct save_funct_obj;
+}
+
     //Checkpoint Object
-    struct checkpoint
+    class checkpoint
     {
-        checkpoint()
+        std::vector<char> data;
+
+        friend std::ostream& operator<<(std::ostream& ost, checkpoint const& ckp);
+        friend std::istream& operator>>(std::istream& ist, checkpoint& ckp);
+        //Serialization Definition
+        friend class hpx::serialization::access;
+        template <typename Archive>
+        void serialize(Archive& arch, const unsigned int version)
         {
-        }
+            arch& data;
+        };
+        friend struct detail::save_funct_obj;
+        template <typename T, typename... Ts>
+        friend void restore_checkpoint(checkpoint const& c, T& t, Ts& ... ts);
+
+    public:
+        checkpoint() = default;
         checkpoint(checkpoint const& c)
           : data(c.data)
         {
@@ -47,39 +78,44 @@ namespace checkpoint_ns
          : data(std::move(c.data))
         {
         }
-        ~checkpoint()
-        {
-        }
+        ~checkpoint() = default;
 
         //Other Constructors
-        checkpoint(std::string file_name)
+        checkpoint(char* stream, std::size_t count)
         {
-            this->load(file_name);
+            for (std::size_t i=0;i<count;i++)
+            {
+                data.push_back(*stream);
+                stream++;
+            }
         }
-
-        std::vector<char> data;
 
         checkpoint& operator=(checkpoint const& c)
         {
-            data = c.data;
+            if (&c != this)
+            {
+                data = c.data;
+            }
+            return *this;
         }
         checkpoint& operator=(checkpoint&& c)
         {
-            data = std::move(c.data);
+            if (&c != this)
+            {
+                data = std::move(c.data);
+            }
+            return *this;
         }
 
         bool operator==(checkpoint const& c) const
         {
-            if(data == c.data)
-            {
-                 return true;
-            }
-            else
-            {
-               return false;
-            }
+            return data == c.data;
         }
-         
+        bool operator!=(checkpoint const& c) const
+        {
+            return !(data == c.data);
+        }
+        
         // Expose iterators to access data held by checkpoint
         using const_iterator = std::vector<char>::const_iterator;
         const_iterator begin() const
@@ -109,15 +145,29 @@ namespace checkpoint_ns
             return data.size();
         }
 
-        //Serialization Definition
-        friend class hpx::serialization::access;
-        template <typename Volume>
-        void serialize(Volume& vol, const unsigned int version)
-        {
-            vol& data;
-        };
-
     };
+
+    //Stream Overloads
+    std::ostream& operator<<(std::ostream& ost, checkpoint const& ckp)
+    {
+        // Write the size of the checkpoint to the file
+        int64_t size = ckp.size();
+        ost.write(reinterpret_cast<char const *>(&size), sizeof(int64_t));
+        // Write the file to the stream
+ //       std::copy(ckp.begin(), ckp.end(), std::ostream_iterator<char>(ost));
+        ost.write(ckp.data.data(), ckp.size());
+        return ost;
+    }
+    std::istream& operator>>(std::istream& ist, checkpoint& ckp)
+    {
+        // Read in the size of the next checkpoint
+        int64_t length;
+        ist.read(reinterpret_cast<char *>(&length), sizeof(int64_t));
+        ckp.data.resize(length);
+        // Read in the next checkpoint
+        ist.read(ckp.data.data(), length);
+        return ist;
+    }
 
     //Function object for save_checkpoint
     namespace detail

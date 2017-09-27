@@ -95,17 +95,17 @@ int main() {
   pass_counter++;
  }
 
- //Test 3 - Test with hpxio_file
+ //Test 3 - Test with a file
  //hpx::cout<<"Test 3:"<<std::endl;
  
- hpxio_file file_3("archive3.archive");
+ std::ofstream file_3("archive3.archive");
  std::vector<char> vec_char={'T', 'e', 's', 't', ' ', 't', 'e', 'x', 't', '.'};
  std::vector<char> vec_char2;
  std::vector<int>  vec_int={1,2,3,4,5};
  std::vector<int>  vec_int2;
  hpx::shared_future<checkpoint> chk_3 = 
                         save_checkpoint(checkpoint(), vec_char, vec_int);
- file_3.write(chk_3.get().data);
+ file_3<<chk_3.get();
  restore_checkpoint(chk_3.get(), vec_char2, vec_int2);
  
  if (std::equal(vec_char.begin(), vec_char.end(), vec_char2.begin()) 
@@ -114,7 +114,8 @@ int main() {
  }
  
  //Clean up
- file_3.remove_file();
+ file_3.close();
+ std::remove("archive3.archive");
  
  //Report results of test
  if ( pass_counter == num_tests) { 

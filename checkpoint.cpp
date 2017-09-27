@@ -157,7 +157,7 @@ int main()
     std::cout << "Test 8:";
     checkpoint archive6;
     archive6 = std::move(archive5);
-    if (archive6.data == archive5.data)
+    if (archive6 == archive5)
     {
         std::cout << " I work!" << std::endl;
     }
@@ -170,14 +170,17 @@ int main()
     int variable = 10;
     hpx::future<int> test_f_int = hpx::make_ready_future(variable);
     hpx::future<int> test_f_int2;
-    hpxio_file test_file_9("test_file_9.txt");
+    std::ofstream test_file_9("test_file_9.txt");
     hpx::future<checkpoint> f_chk_file = save_checkpoint(
         std::move(checkpoint()), test_int, test_f_int);
-    test_file_9.write(f_chk_file.get().data);
+    test_file_9<<f_chk_file.get();
+    test_file_9.close();
     
     checkpoint archive_9;
-    archive_9.load("test_file_9.txt");
+    std::ifstream test_file_9_1("test_file_9.txt");
+    test_file_9_1>>archive_9;
     restore_checkpoint(std::move(archive_9), test_int2, test_f_int2);
+    test_file_9_1.close();
     if (test_int == test_int2 && variable == test_f_int2.get())
     {
         std::cout << " I work!" << std::endl;
@@ -197,19 +200,23 @@ int main()
     restore_checkpoint(f_test_file_10.get(), test_double2);
     std::cout << "Double: " << test_double << "=" << test_double2 << std::endl;
     std::cout<<"I still need some work to write my data to file."<<std::endl;
-*/
+
     //Test 11
     //separate checkpoint and file usecase
     std::cout << "Test 11:";
     hpxio_file test_file_11("test_file_11.txt");
     std::vector<float> vec11{1.02, 1.03, 1.04, 1.05};
     hpx::future<checkpoint> fut_11=save_checkpoint(checkpoint(),vec11);
-    test_file_11.write(fut_11.get().data);
+    test_file_11.write(fut_11.get());
     
     std::vector<float> vec_11_1;
     hpxio_file test_file_11_1("test_file_11.txt");
     checkpoint archive11;
-    archive11.data=test_file_11_1.data;
+    std::copy(
+        test_file_11_1.data.begin()
+      , test_file_11_1.data.end()
+      , archive11.begin()
+        );
     restore_checkpoint(archive11, vec_11_1);
 
     if(vec11==vec_11_1)
@@ -228,7 +235,7 @@ int main()
     {
         std::cout<<" I work!"<<std::endl;
     }
-    
+*/    
     //Test 13
     //test policies
     std::cout << "Test 13:";
@@ -255,7 +262,8 @@ int main()
     std::vector<float> vec14{1.02, 1.03, 1.04, 1.05};
     hpx::future<checkpoint> fut_14=save_checkpoint(vec14);
     checkpoint archive14 = fut_14.get();
-    test_file_14.write(archive14.data.data(),archive14.size());
+    test_file_14<<archive14;
+//    test_file_14.write(archive14.data.data(),archive14.size());
     test_file_14.close();
     {
         std::cout<<" I work!"<<" I am: "<<archive14.size()<<std::endl;
@@ -299,3 +307,4 @@ int main()
 
     return 0;
 }
+
