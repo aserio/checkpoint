@@ -276,10 +276,11 @@ int main()
             }
     }
 
-    //test .load()
+    //test operator>>
     std::vector<float> vec14_1;
     checkpoint archive14_1;
-    archive14_1.load("checkpoint_test_file.txt");
+    std::ifstream test_file_14_1("checkpoint_test_file.txt");
+    test_file_14_1>>archive14_1;
     restore_checkpoint(archive14_1, vec14_1);
     if(vec14==vec14_1)
     {
@@ -288,17 +289,20 @@ int main()
     
     //Test 15
     // testing iterators
+    // Old code below
+    //std::copy(archive15.begin(), archive15.end(), std::ostream_iterator<char>(test_file_15));
     std::cout<<"Test 15:";
     std::ofstream test_file_15("test_file_15.txt");
     std::vector<int> vec15{1,2,3,4,5};
     hpx::future<checkpoint> fut_15=save_checkpoint(vec15);
     checkpoint archive15=fut_15.get();
-    std::copy(archive15.begin(), archive15.end(), std::ostream_iterator<char>(test_file_15));
+    test_file_15<<archive15;
     test_file_15.flush();
     
     std::vector<int> vec15_1;
     checkpoint archive15_1;
-    archive15_1.load("test_file_15.txt");
+    std::ifstream test_file_15_1("test_file_15.txt");
+    test_file_15_1>>archive15_1;
     restore_checkpoint(archive15_1, vec15_1);
     if(vec15==vec15_1)
     {

@@ -126,7 +126,7 @@ namespace detail
         {
             return data.end();
         }
-
+/*
         void load(std::string file_name)
         {
             std::ifstream ifs(file_name);
@@ -139,7 +139,7 @@ namespace detail
                 ifs.read(data.data(), length);
             }
         }
-
+*/
         size_t size() const
         {
             return data.size();
@@ -154,7 +154,6 @@ namespace detail
         int64_t size = ckp.size();
         ost.write(reinterpret_cast<char const *>(&size), sizeof(int64_t));
         // Write the file to the stream
- //       std::copy(ckp.begin(), ckp.end(), std::ostream_iterator<char>(ost));
         ost.write(ckp.data.data(), ckp.size());
         return ost;
     }
