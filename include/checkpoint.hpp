@@ -50,14 +50,14 @@ namespace detail
     struct save_funct_obj;
 }
 
-    //Checkpoint Object
+    // Checkpoint Object
     class checkpoint
     {
         std::vector<char> data;
 
         friend std::ostream& operator<<(std::ostream& ost, checkpoint const& ckp);
         friend std::istream& operator>>(std::istream& ist, checkpoint& ckp);
-        //Serialization Definition
+        // Serialization Definition
         friend class hpx::serialization::access;
         template <typename Archive>
         void serialize(Archive& arch, const unsigned int version)
@@ -80,16 +80,17 @@ namespace detail
         }
         ~checkpoint() = default;
 
-        //Other Constructors
-        checkpoint(char* stream, std::size_t count)
+        // Other Constructors
+        checkpoint(std::vector<char> const& vec)
+          : data(vec)
         {
-            for (std::size_t i=0;i<count;i++)
-            {
-                data.push_back(*stream);
-                stream++;
-            }
+        }
+        checkpoint(std::vector<char> && vec)
+          : data(std::move(vec))
+        {
         }
 
+        // Overloads
         checkpoint& operator=(checkpoint const& c)
         {
             if (&c != this)
@@ -126,20 +127,8 @@ namespace detail
         {
             return data.end();
         }
-/*
-        void load(std::string file_name)
-        {
-            std::ifstream ifs(file_name);
-            if(ifs)                               //Check fstream is open
-            {
-                ifs.seekg(0, ifs.end);
-                int length = ifs.tellg();         //Get length of file
-                ifs.seekg(0, ifs.beg);
-                data.resize(length);
-                ifs.read(data.data(), length);
-            }
-        }
-*/
+
+        // Functions
         size_t size() const
         {
             return data.size();
@@ -147,7 +136,7 @@ namespace detail
 
     };
 
-    //Stream Overloads
+    // Stream Overloads
     std::ostream& operator<<(std::ostream& ost, checkpoint const& ckp)
     {
         // Write the size of the checkpoint to the file
@@ -168,7 +157,7 @@ namespace detail
         return ist;
     }
 
-    //Function object for save_checkpoint
+    // Function object for save_checkpoint
     namespace detail
     {
         struct save_funct_obj
@@ -176,18 +165,18 @@ namespace detail
          template <typename... Ts>
          checkpoint operator()(checkpoint&& c, Ts&&... ts) const
          {
-             //Create serialization archive from checkpoint data member
+             // Create serialization archive from checkpoint data member
              hpx::serialization::output_archive ar(c.data);
-             //Serialize data
-             int const sequencer[] = { //Trick to expand the variable pack
-                 (ar << ts, 0)...};    //Takes advantage of the comma operator
+             // Serialize data
+             int const sequencer[] = { // Trick to expand the variable pack
+                 (ar << ts, 0)...};    // Takes advantage of the comma operator
              (void)sequencer;           // Suppress unused param. warnings
              return c;
          }
      };
     }
 
-    //Save_checkpoint function 
+    // Save_checkpoint function 
     template <typename T
             , typename... Ts
             , typename U = typename std::enable_if<
@@ -206,7 +195,7 @@ namespace detail
         }
     }
     
-    //Save_checkpoint function - Take a pre-initialized checkpoint
+    // Save_checkpoint function - Take a pre-initialized checkpoint
     template <typename T, typename... Ts>
     hpx::future<checkpoint> save_checkpoint(checkpoint&& c
         , T&& t
@@ -222,7 +211,7 @@ namespace detail
     }
     
     
-    //Store function - Policy overload
+    // Store function - Policy overload
     template <typename T, typename... Ts>
     hpx::future<checkpoint> save_checkpoint(
           hpx::launch p
@@ -239,7 +228,7 @@ namespace detail
         }
     }
 
-    //Store function - Policy overload & pre-initialized checkpoint
+    // Store function - Policy overload & pre-initialized checkpoint
     template <typename T, typename... Ts>
     hpx::future<checkpoint> save_checkpoint(
           hpx::launch p
@@ -257,7 +246,7 @@ namespace detail
         }
     }
 
-    //Save_checkpoint function - With sync policy
+    // Save_checkpoint function - With sync policy
     template <typename T
             , typename... Ts
             , typename U = typename std::enable_if<
@@ -281,7 +270,7 @@ namespace detail
         }
     }
 
-    //Save_checkpoint function - With sync policy & pre-init. checkpoint
+    // Save_checkpoint function - With sync policy & pre-init. checkpoint
     template <typename T, typename... Ts>
     checkpoint save_checkpoint(
           hpx::launch::sync_policy sync_p
@@ -301,18 +290,18 @@ namespace detail
         }
     }
 
-    //Resurrect Function
+    // Resurrect Function
     template <typename T, typename... Ts>
     void restore_checkpoint(checkpoint const& c, T& t, Ts& ... ts)
     {
         {
-            //Create seriaalization archive
+            // Create seriaalization archive
             hpx::serialization::input_archive ar(c.data, c.size());
     
-            //De-serialize data
+            // De-serialize data
             ar >> t;
-            int const sequencer[] = {//Trick to exand the variable pack
-               (ar >> ts, 0)...};    //Takes advantage of the comma operator
+            int const sequencer[] = {// Trick to exand the variable pack
+               (ar >> ts, 0)...};    // Takes advantage of the comma operator
             (void)sequencer;           // Suppress unused param. warnings
         }
     }
